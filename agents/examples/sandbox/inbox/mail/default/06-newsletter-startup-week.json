@@ -1,0 +1,13 @@
+{
+  "messageId": "<nl-2026-39@berlinstartupweek.example>",
+  "from": {
+    "address": "news@berlinstartupweek.example",
+    "name": "Berlin Startup Week"
+  },
+  "to": ["office@acmeledgers.example"],
+  "cc": [],
+  "subject": "Berlin Startup Week: the programme is out",
+  "text": "Two hundred sessions, forty venues, one week. Early tickets close Friday.",
+  "receivedAt": "2026-09-26T13:20:00Z",
+  "attachments": []
+}

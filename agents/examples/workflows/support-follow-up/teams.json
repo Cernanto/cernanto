@@ -1,0 +1,8 @@
+{
+  "teams": {
+    "billing": { "name": "Finance", "channel": "#finance" },
+    "technical": { "name": "Engineering", "channel": "#engineering" },
+    "account access": { "name": "Support", "channel": "#support" }
+  },
+  "triage": { "name": "Support leads", "channel": "#triage" }
+}

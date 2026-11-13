@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    // Exported zod schemas would each need an explicit type annotation under
+    // isolatedDeclarations; the inferred schema types are the contract here.
+    "isolatedDeclarations": false
+  },
+  "include": ["src"]
+}

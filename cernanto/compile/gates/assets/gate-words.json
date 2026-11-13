@@ -1,0 +1,119 @@
+{
+  "CE223": {
+    "message": "agent code never imports the runtime package; its powers are the emitted modules",
+    "hint": "import callId/invoke/cancel/usage from \"./os.js\", and an agent's functions from \"./agents/<its id with dashes>.js\" (with its grant)"
+  },
+  "CE200": {
+    "message": "import of \"{{specifier}}\" is not granted",
+    "hint": "add \"npm:{{specifier2}}\" to the Uses line or remove the import"
+  },
+  "CE216": {
+    "message": "dynamic import with a computed specifier is not allowed",
+    "hint": "import dependencies statically so the allowlist can see them"
+  },
+  "CE215": {
+    "message": "process access is not allowed in agent code",
+    "hint": "configuration comes from the arguments and from the plane's settings, read through cernanto/config; of process, a job has process.pid and process.kill"
+  },
+  "CE233": {
+    "message": "the exported function {{text}} has no TSDoc",
+    "hint": "document every exported function (description, @param, @returns, one @example): the contract carries these docs to every consumer and to the tests written from it"
+  },
+  "CE221": {
+    "message": "a step must not call into a module (\"{{name}}\"): a module's function runs on its own path, and inside a step it never completes",
+    "hint": "call it directly outside the step and pass its value in; a step wraps only your own side effect (a granted npm call, a computation to pin)"
+  },
+  "CE221.2": {
+    "message": "a step must not contain \"{{name}}\": it is already durable, and a durable operation inside a step never completes",
+    "hint": "call it directly outside the step and pass its value in; a step wraps only your own side effect (a granted npm call, a computation to pin)"
+  },
+  "CE202.opaque.node:crypto": {
+    "message": "node:crypto must be imported by name so the deterministic subset is visible",
+    "hint": "import { createHmac, createHash, timingSafeEqual, createCipheriv, createDecipheriv } from \"node:crypto\""
+  },
+  "CE202.member.node:crypto": {
+    "message": "\"{{name}}\" from node:crypto is not deterministic agent code",
+    "hint": "the deterministic subset is createHmac, createHash, timingSafeEqual, createCipheriv, createDecipheriv; randomness is standard code (crypto.randomUUID(), crypto.getRandomValues())"
+  },
+  "CE202.opaque.node:sqlite": {
+    "message": "node:sqlite must be imported by name so the admitted subset is visible",
+    "hint": "import { DatabaseSync } from \"node:sqlite\""
+  },
+  "CE202.member.node:sqlite": {
+    "message": "\"{{name}}\" from node:sqlite is not agent code",
+    "hint": "the admitted subset is DatabaseSync, over a file of the agent's own"
+  },
+  "CE202.opaque.node:fs": {
+    "message": "node:fs must be imported by name so the read-only subset is visible",
+    "hint": "import { readFileSync } from \"node:fs\" (readFileSync, statSync, readdirSync, createReadStream)"
+  },
+  "CE202.member.node:fs": {
+    "message": "\"{{name}}\" from node:fs is not agent code: granted files are read-only, and the process's disk is not durable",
+    "hint": "the read-only subset is readFileSync, statSync, readdirSync, createReadStream, on the paths ./assets.js exports"
+  },
+  "CE202.opaque.node:fs/promises": {
+    "message": "node:fs/promises must be imported by name so the read-only subset is visible",
+    "hint": "import { readFile } from \"node:fs/promises\" (readFile, stat, readdir)"
+  },
+  "CE202.member.node:fs/promises": {
+    "message": "\"{{name}}\" from node:fs/promises is not agent code: granted files are read-only, and the process's disk is not durable",
+    "hint": "the read-only subset is readFile, stat, readdir, on the paths ./assets.js exports"
+  },
+  "CE201": {
+    "message": "import of \"{{specifier}}\" is not allowed in agent code",
+    "hint": "effects go through the emitted modules and the granted packages; only pure built-ins are importable"
+  },
+  "CE201.2": {
+    "message": "import of \"{{specifier}}\" is not allowed in agent code",
+    "hint": "owned file access rides a granted npm package (Uses: npm:fs-extra), never node's own fs; a file: grant ships read-only inputs under assets/ (the paths ride ./assets.js)"
+  },
+  "CE232": {
+    "message": "debuglog('{{section}}') logs under a section the platform never reads",
+    "hint": "debug through debuglog('agent'): the platform captures that section alone"
+  },
+  "CE234": {
+    "message": "the module reaches a dependency or a package and declares no debug section",
+    "hint": "declare `const debug = debuglog('agent')` from node:util and log the arguments before each library, api or dependency call and its result after it: these lines are the evidence when a test fails"
+  },
+  "CE235": {
+    "message": "\"{{specifier}}\" is a CommonJS package: its namespace (import * as {{name}}) carries only the names Node finds by reading its entry, and any other member reads undefined when the code runs",
+    "hint": "import its default export, which is the whole of module.exports: import {{name}} from \"{{specifier}}\""
+  },
+  "CE214": {
+    "message": "require is not allowed",
+    "hint": "use import declarations"
+  },
+  "task.class": {
+    "message": "the module variable \"{{name}}\" holds an instance of a class this agent declares: class instances do not persist, so its memory would silently die with each process. Hold plain data at module scope (an object, a Record, a Map) and plain functions beside it"
+  },
+  "task.constant": {
+    "message": "a task keeps no state across calls: the module variable \"{{name}}\" is memory, or a constant used whole under a mutable type. A constant is declared `as const` (a readonly tuple or object nothing can write through) or built inside the function that uses it; cross-call memory belongs to an agent whose spec says it keeps state between calls, or to a dependency that owns storage"
+  },
+  "task.memory": {
+    "message": "a task keeps no state across calls: the module variable \"{{name}}\" is memory. Say in the spec that this agent keeps it between calls (a service, or a job for the life of its process), or keep the data in a dependency that owns storage"
+  },
+  "CE239": {
+    "message": "the Tests section lists \"{{agentId}}\" under Mocks, and no mock stands for it: write {{file}} exporting the mocked contract's functions",
+    "hint": "one mock per listed agent, at src/mocks/<its stub file name>.ts; the mocked contract's types are in ./agents/"
+  },
+  "CE239.2": {
+    "message": "{{file}} stands for no agent the Tests section lists under Mocks",
+    "hint": "list the agent under Mocks, or remove the file"
+  },
+  "CE240": {
+    "message": "the mock of \"{{agentId}}\" does not cover the contract it stands for:",
+    "hint": "export every function of the mocked contract with a compatible signature; extras are allowed"
+  },
+  "CE236": {
+    "message": "the api at {{host}} is granted and generated as a module, and a url of it written into the code reaches it around the module: unjournaled, unsecured, and run again on every replay",
+    "hint": "import the operations from \"{{specifier}}\" and call them like any dependency: the module holds the account and journals every call; write no url of the api"
+  },
+  "CE241": {
+    "message": "the exported declaration \"{{name}}\" names \"{{imported}}\", a type imported from a dependency; a contract stands alone",
+    "hint": "declare the shape again in this agent's own sources under a name of its own, and name that in the exported declaration; an unexported helper may use the import"
+  },
+  "CE242": {
+    "message": "\"{{name}}\" is called at the top level of the file; outside every handler a call has no journal and no identity, and a module's would run as its consumer",
+    "hint": "call it inside the function that needs the answer, and read a setting where it is used, never at the file's load"
+  }
+}

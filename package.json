@@ -1,0 +1,33 @@
+{
+  "name": "cernanto-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "build": "pnpm --filter @cernanto/system run build && pnpm --filter @cernanto/runtime-lib run build && pnpm --filter @cernanto/package-format run build && pnpm --filter @cernanto/runtime run build && pnpm -r --filter \"!@cernanto/system\" --filter \"!@cernanto/runtime-lib\" --filter \"!@cernanto/package-format\" --filter \"!@cernanto/runtime\" run build",
+    "typecheck": "pnpm -r run typecheck",
+    "lint:format": "prettier --check .",
+    "test": "pnpm -r run test",
+    "format": "prettier --write .",
+    "regen:gateway": "node cli/scripts/regen-gateway.mjs",
+    "lint": "pnpm -r run lint && pnpm run lint:format"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "semi": true,
+    "trailingComma": "all"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "cross-spawn": "7.0.6",
+    "eslint": "^9.0.0",
+    "prettier": "^3.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.18.0"
+  }
+}

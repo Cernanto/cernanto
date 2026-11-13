@@ -1,0 +1,77 @@
+# Copyright (c) 2026 Cernanto.
+# SPDX-License-Identifier: Apache-2.0
+openapi: 3.1.0
+info:
+  title: Orders
+  version: 1.0.0
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      summary: Reads one order.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: No order by that id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /orders:
+    post:
+      operationId: createOrder
+      summary: Creates an order and answers it with its id.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewOrder'
+      responses:
+        '201':
+          description: The order, with its id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+components:
+  schemas:
+    Order:
+      type: object
+      required: [id, total, lines]
+      properties:
+        id:
+          type: string
+        total:
+          type: number
+        lines:
+          type: array
+          items:
+            type: string
+    NewOrder:
+      type: object
+      required: [total, lines]
+      properties:
+        total:
+          type: number
+        lines:
+          type: array
+          items:
+            type: string
+    Problem:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string

@@ -1,0 +1,104 @@
+{
+  "CE160": {
+    "message": "\"{{agentId}}\" grants \"{{capability}}\", which the runtime harness \"{{runtimeHarness}}\" cannot serve",
+    "hint": "set the runtime harness to claude-code or codex, or drop the search grant"
+  },
+  "CE102": {
+    "message": "\"{{agentId}}\" grants itself in its Uses line; an agent never depends on itself",
+    "hint": "remove the self reference"
+  },
+  "CE103": {
+    "message": "\"{{path}}\" appears more than once in the Uses line",
+    "hint": "keep a single entry per grant"
+  },
+  "CE101": {
+    "message": "Uses names \"{{path}}\": no agent of that id is in the workspace, none is deployed, and the registry has no package by that name"
+  },
+  "CE104": {
+    "message": "\"{{path}}\" is a worker and cannot appear in a Uses line",
+    "hint": "if others depend on it, say in its spec that it is called and keeps its state between calls, or drop the grant"
+  },
+  "CE152": {
+    "message": "a worker has no tests: it is a program the plane starts, and its run is its proof",
+    "hint": "drop the ## Tests section, or, if others call it, say so in its spec"
+  },
+  "CE182": {
+    "message": "an interface has no Uses line: it compiles to a contract and nothing else, so it reaches nothing",
+    "hint": "drop the Uses line; grants belong to the implementors and consumers"
+  },
+  "CE183": {
+    "message": "an interface does not implement another interface (no composition in v1)",
+    "hint": "drop the Implements line"
+  },
+  "CE181": {
+    "message": "a worker implements nothing: it has no handlers for an interface to pin",
+    "hint": "drop the Implements line, or if others call it, say so in its spec (an agent others call is a task, or keeps state between calls)"
+  },
+  "CE180": {
+    "message": "\"{{agentId}}\" implements itself; an agent conforms to an interface, never to its own id",
+    "hint": "remove the self reference"
+  },
+  "CE180.2": {
+    "message": "Implements names \"{{target}}\", which is a {{type}}, not an interface",
+    "hint": "an Implements target is a spec that only defines a contract others implement; to call an agent, grant it on the Uses line instead"
+  },
+  "CE180.3": {
+    "message": "Implements names \"{{target}}\" but no spec exists at that path under the agents root"
+  },
+  "CE161": {
+    "message": "\"{{agentId}}\" and \"{{holder}}\" would both serve as \"{{serviceName}}\" on the substrate",
+    "hint": "rename one; service names replace every non-alphanumeric character with an underscore"
+  },
+  "CE162": {
+    "message": "\"{{agentId}}\" is installed from a package; a workspace file may not shadow an installed package",
+    "hint": "remove the install, or move your spec to another id"
+  },
+  "CE170": {
+    "message": "file:{{written}} resolves outside the agents root (or to the root itself); only files under the root are uploaded with the workspace",
+    "hint": "move the file under the agents root and grant it by a path relative to the spec, or from the root with a leading slash"
+  },
+  "CE171": {
+    "message": "file:{{written}} names no file or folder at {{rel}}",
+    "hint": "the path is relative to the spec, or from the agents root when it starts with a slash"
+  },
+  "CE172": {
+    "message": "file:{{written}} is {{folder}} ({{rel}}); the upload carries regular files only",
+    "hint": "replace it with the file itself"
+  },
+  "CE172.2": {
+    "message": "file:{{written}} grants an empty folder ({{rel}}/)",
+    "hint": "put files in it or drop the grant"
+  },
+  "CE174": {
+    "message": "{{sep}} is {{large}}, past the {{MAX_ASSET_BYTES}} cap on one granted file",
+    "hint": "keep large data in a dependency that owns storage"
+  },
+  "CE173": {
+    "message": "file:{{written}} and file:{{holder}} would both be exported as \"{{name}}\" by ./assets.js",
+    "hint": "rename one of them; the export name comes from the file or folder name"
+  },
+  "CE106": {
+    "message": "\"{{agentId}}\" uses \"{{path}}\", which is deployed and uses \"{{agentId}}\" back through the fleet ({{loop}}): a cycle",
+    "hint": "break the loop: one of the two must stop using the other, or the shared part becomes a third agent both use"
+  },
+  "CE190": {
+    "message": "Implements names openapi:{{written}}, and {{reason}}",
+    "hint": "the target is a path relative to the spec (or from the agents root with a leading slash) to a file that exists, or an https url"
+  },
+  "CE191": {
+    "message": "\"{{agentId}}\" implements more than one openapi document; one document per agent",
+    "hint": "merge the paths into one document, or split the agent"
+  },
+  "CE237": {
+    "message": "Mocks names \"{{agentId}}\", which cannot be mocked: {{reason}}",
+    "hint": "list an agent, a module or an interface this agent's own Uses names; the agent itself is never mocked"
+  },
+  "CE238": {
+    "message": "an interface's ## Tests section may not list Mocks: the section applies at every implementor's compile, whose edges it cannot know",
+    "hint": "list the mocks in each implementor's own Tests section"
+  },
+  "CE243": {
+    "message": "Mocks names \"{{agentId}}\", which is not an agent this agent's tests could reach",
+    "hint": "a mock stands in for an agent this agent uses: an agent or an interface its own Uses names, in this workspace, installed, or an agent of the fleet"
+  }
+}

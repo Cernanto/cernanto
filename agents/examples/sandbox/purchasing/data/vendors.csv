@@ -1,0 +1,5 @@
+vendor_id,name,email,country,currency,payment_terms_days,iban
+V-100,Nordwind Paper GmbH,invoices@nordwind-paper.example,DE,EUR,30,DE02120300000000202051
+V-101,Hafen Kaffee Roesterei,buchhaltung@hafenkaffee.example,DE,EUR,14,DE02100500000054540402
+V-102,Thames Lighting Ltd,accounts@thameslighting.example,GB,GBP,30,GB33BUKB20201555555555
+V-103,Berlin Buero Vermietung,miete@bbv.example,DE,EUR,0,DE02500105170137075030

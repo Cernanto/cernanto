@@ -1,0 +1,6 @@
+ticket_id,requester_email,subject,body,opened_at,status,team,category
+T-7001,grace.mueller@example.net,Refund for order A-1007,"Received the wrong colour, unused, would like a refund.",2026-09-24,open,,
+T-7002,jonas.berg@example.org,Wrong item in order A-1012,"Two notebooks instead of three.",2026-09-25,open,,
+T-7003,piet.devries@example.nl,Cannot log in to the storefront,"The password reset mail never arrives.",2026-09-25,open,,
+T-7004,aino.korhonen@example.fi,Charged twice for order A-1009,"My card shows two charges of 66.00.",2026-09-26,open,,
+T-7005,maren.vogt@example.de,Checkout shows an error on the payment page,"Every time I press pay the page shows error 500.",2026-09-26,open,,

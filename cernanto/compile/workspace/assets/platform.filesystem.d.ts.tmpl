@@ -1,0 +1,71 @@
+/** Local files are scratch, never durable progress. Reconstruct them on replay and keep live job scratch private to its attempt. A file on the machine is read and written here, on every system alike, never through a command. */
+declare module 'node:fs' {
+  /** What a path or an open file is, read without following a link (`lstatSync`) or off the open file (`fstatSync`). */
+  interface LocalStats {
+    size: number;
+    mode: number;
+    uid: number;
+    gid: number;
+    mtimeMs: number;
+    isFile(): boolean;
+    isDirectory(): boolean;
+    isSymbolicLink(): boolean;
+  }
+  /** The open flags. `O_NOFOLLOW` is absent on a system that has no such open (Windows): check the path with `lstatSync` there. */
+  export const constants: {
+    readonly O_RDONLY: number;
+    readonly O_WRONLY: number;
+    readonly O_RDWR: number;
+    readonly O_CREAT: number;
+    readonly O_EXCL: number;
+    readonly O_APPEND: number;
+    readonly O_NOFOLLOW?: number;
+  };
+  export function readFileSync(path: string, encoding: BufferEncoding): string;
+  export function readFileSync(path: string, options: { encoding: BufferEncoding; flag?: string }): string;
+  export function readFileSync(path: string, options?: { encoding?: null; flag?: string } | null): Buffer;
+  export function readdirSync(path: string): string[];
+  export function statSync(path: string): LocalStats;
+  export function lstatSync(path: string): LocalStats;
+  export function fstatSync(fd: number): LocalStats;
+  export function openSync(path: string, flags: string | number, mode?: number): number;
+  export function readSync(fd: number, buffer: Uint8Array, offset: number, length: number, position: number | null): number;
+  export function closeSync(fd: number): void;
+  export function chownSync(path: string, uid: number, gid: number): void;
+  export function existsSync(path: string): boolean;
+  export function writeFileSync(path: string, data: string | Uint8Array, options?: BufferEncoding | { encoding?: BufferEncoding; flag?: string; mode?: number }): void;
+  export function appendFileSync(path: string, data: string | Uint8Array, options?: BufferEncoding | { encoding?: BufferEncoding; flag?: string; mode?: number }): void;
+  export function mkdirSync(path: string, options?: { recursive?: boolean; mode?: number }): string | undefined;
+  export function mkdtempSync(prefix: string): string;
+  export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean; maxRetries?: number }): void;
+  export function unlinkSync(path: string): void;
+  export function renameSync(oldPath: string, newPath: string): void;
+  export function copyFileSync(source: string, destination: string, mode?: number): void;
+  export function cpSync(source: string, destination: string, options?: { recursive?: boolean; force?: boolean; dereference?: boolean; errorOnExist?: boolean }): void;
+  export function chmodSync(path: string, mode: number): void;
+  export function realpathSync(path: string): string;
+  export function symlinkSync(target: string, path: string, type?: 'file' | 'dir' | 'junction'): void;
+  export function readlinkSync(path: string): string;
+}
+declare module 'node:fs/promises' {
+  export function readFile(path: string, encoding: BufferEncoding): Promise<string>;
+  export function readFile(path: string, options: { encoding: BufferEncoding; flag?: string }): Promise<string>;
+  export function readFile(path: string, options?: { encoding?: null; flag?: string } | null): Promise<Buffer>;
+  export function readdir(path: string): Promise<string[]>;
+  export function stat(path: string): Promise<{ size: number; mode: number; uid: number; gid: number; mtimeMs: number; isFile(): boolean; isDirectory(): boolean; isSymbolicLink(): boolean }>;
+  export function lstat(path: string): Promise<{ size: number; mode: number; uid: number; gid: number; mtimeMs: number; isFile(): boolean; isDirectory(): boolean; isSymbolicLink(): boolean }>;
+  export function access(path: string, mode?: number): Promise<void>;
+  export function writeFile(path: string, data: string | Uint8Array, options?: BufferEncoding | { encoding?: BufferEncoding; flag?: string; mode?: number; signal?: AbortSignal }): Promise<void>;
+  export function appendFile(path: string, data: string | Uint8Array, options?: BufferEncoding | { encoding?: BufferEncoding; flag?: string; mode?: number }): Promise<void>;
+  export function mkdir(path: string, options?: { recursive?: boolean; mode?: number }): Promise<string | undefined>;
+  export function mkdtemp(prefix: string): Promise<string>;
+  export function rm(path: string, options?: { recursive?: boolean; force?: boolean; maxRetries?: number }): Promise<void>;
+  export function unlink(path: string): Promise<void>;
+  export function rename(oldPath: string, newPath: string): Promise<void>;
+  export function copyFile(source: string, destination: string, mode?: number): Promise<void>;
+  export function cp(source: string, destination: string, options?: { recursive?: boolean; force?: boolean; dereference?: boolean; errorOnExist?: boolean }): Promise<void>;
+  export function chmod(path: string, mode: number): Promise<void>;
+  export function realpath(path: string): Promise<string>;
+  export function symlink(target: string, path: string, type?: 'file' | 'dir' | 'junction'): Promise<void>;
+  export function readlink(path: string): Promise<string>;
+}

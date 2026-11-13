@@ -1,0 +1,33 @@
+{
+  "name": "@cernanto/runtime",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Cernanto runtime: runs an agent's package as one process on a plane; the cli installs it.",
+  "type": "module",
+  "license": "BUSL-1.1",
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "cernanto-agent": "./dist/agent/bin.js",
+    "cernanto-host": "./bin/cernanto-host",
+    "cernanto-release": "./bin/cernanto-release"
+  },
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@cernanto/runtime-lib": "workspace:*",
+    "@cernanto/system": "workspace:*",
+    "typescript": "5.9.3",
+    "yaml": "2.9.0",
+    "zod": "^4.6.6"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "templates"
+  ]
+}

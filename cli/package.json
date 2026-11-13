@@ -1,0 +1,59 @@
+{
+  "name": "cernanto",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Cernanto cli: write agents in plain English, deploy them to a plane, read their traces.",
+  "keywords": [
+    "programming-language",
+    "ai-agents",
+    "agents",
+    "agentic-ai",
+    "natural-language-programming",
+    "compiler",
+    "multi-agent-systems",
+    "agent-framework",
+    "durable-execution",
+    "workflow-engine",
+    "llm",
+    "markdown",
+    "openapi",
+    "mcp",
+    "claude",
+    "automation"
+  ],
+  "homepage": "https://cernanto.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cernanto/cernanto.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Cernanto/cernanto/issues"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "bin": {
+    "cernanto": "dist/main.js"
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@cernanto/package-format": "workspace:*",
+    "@cernanto/system": "workspace:*",
+    "commander": "^14.0.0",
+    "undici": "^7.30.1"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0"
+  },
+  "files": [
+    "dist",
+    "skills"
+  ]
+}

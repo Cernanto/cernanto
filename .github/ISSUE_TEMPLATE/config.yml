@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+blank_issues_enabled: false
+contact_links:
+  - name: A question
+    url: https://github.com/cernanto/cernanto/discussions/categories/q-a
+    about: Ask in Discussions; the maintainers read it daily.
+  - name: Share a spec
+    url: https://github.com/cernanto/cernanto/discussions/categories/show-and-tell
+    about: A spec is a readable post. Share the agent you wrote and what it runs.
+  - name: A security problem
+    url: https://github.com/cernanto/cernanto/security/policy
+    about: Report it privately, as the security policy describes. Never in a public issue.

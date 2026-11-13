@@ -1,0 +1,13 @@
+{
+  "messageId": "<7d0e9b2c-1012@example.org>",
+  "from": {
+    "address": "jonas.berg@example.org",
+    "name": "Jonas Berg"
+  },
+  "to": ["office@acmeledgers.example"],
+  "cc": [],
+  "subject": "Wrong item in order A-1012",
+  "text": "Hi,\n\nOrder A-1012 arrived today with two notebooks instead of the three I paid for. I would like an exchange or the missing one sent.\n\nJonas",
+  "receivedAt": "2026-09-25T14:40:00Z",
+  "attachments": []
+}

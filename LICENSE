@@ -1,0 +1,37 @@
+Cernanto is licensed by folder.
+
+  cli/, format/, system/, agents/,        Apache License, Version 2.0
+  and the files at the repository         (the LICENSE file in each folder)
+  root
+
+  cernanto/gateway/openapi.yaml           Apache License, Version 2.0
+                                          (stated in the file's own
+                                          SPDX-License-Identifier line)
+
+  README.md, docs/                        Apache License, Version 2.0
+
+  runtime/lib, runtime/process,           Business Source License 1.1
+  cernanto/                               (the LICENSE file in each folder,
+                                          with the Additional Use Grant, the
+                                          Cernanto Output Exception and the
+                                          Change Date; Apache License,
+                                          Version 2.0 as the Change License)
+
+A file that states its own license in an SPDX-License-Identifier line is
+governed by that license. Every other folder and file of this repository is
+proprietary to Cernanto: no license, express or implied, is granted to it,
+and copying, modification, distribution or use is prohibited without prior
+written permission from Cernanto.
+
+Cernanto's compiler and runtime are the subject of a pending patent
+application. The patent exists to keep others from offering the same system
+under another name, not to reach anyone who uses this software under its
+licenses. The folders under the Apache License, Version 2.0 carry the patent
+license of its section 3. For the folders under the Business Source License
+1.1, Cernanto will not assert any patent it owns or controls against a use
+of the Licensed Work that the License and its Additional Use Grant permit;
+assertion is reserved for a Cernanto Platform Service that the Grant does
+not permit, and for defense against a party that first brings a patent
+claim against Cernanto.
+
+Copyright (c) 2026 Cernanto.

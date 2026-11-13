@@ -1,0 +1,7 @@
+po_id,vendor_id,issued_at,currency,total,line,description,quantity,unit_price
+PO-1042,V-100,2026-09-01,EUR,6000.00,1,"A4 copy paper, 80 g, box of 2500",200,24.50
+PO-1042,V-100,2026-09-01,EUR,6000.00,2,Toner cartridge TN-2420,12,89.00
+PO-1042,V-100,2026-09-01,EUR,6000.00,3,Delivery,1,32.00
+PO-1043,V-101,2026-09-05,EUR,1710.00,1,"Espresso beans, 1 kg",60,28.50
+PO-1044,V-102,2026-09-08,GBP,820.00,1,"Desk lamp, LED, dimmable",15,54.00
+PO-1044,V-102,2026-09-08,GBP,820.00,2,Shipping,1,10.00

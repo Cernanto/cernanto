@@ -1,0 +1,13 @@
+{
+  "kind": "agent-call",
+  "agentId": "payments/payment-retry",
+  "callId": "call-1",
+  "seq": 3,
+  "at": "2026-01-01T00:00:00Z",
+  "target": "notifications/telegram-send",
+  "handler": "send",
+  "args": { "chatId": "risk-team", "text": "hello" },
+  "error": "the fake exploded",
+  "stack": "Error: the fake exploded\n    at send",
+  "durationMs": 4
+}

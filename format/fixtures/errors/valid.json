@@ -1,0 +1,5 @@
+{
+  "kind": "retryable",
+  "message": "upstream timeout",
+  "retryAfterMs": 5000
+}

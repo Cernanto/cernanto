@@ -1,0 +1,5 @@
+lead_id,company,contact_name,email,website,country,created_at,owner,status
+L-501,Nordic Ventures,Maria Holm,maria.holm@nordicventures.example,nordicventures.example,SE,2026-09-26,,new
+L-502,Fjord Logistics AS,Henrik Aas,henrik.aas@fjordlogistics.example,fjordlogistics.example,NO,2026-09-20,Ines Moreau,qualified
+L-503,Lisboa Cafes Lda,Rita Costa,rita.costa@lisboacafes.example,lisboacafes.example,PT,2026-09-22,Kenji Sato,contacted
+L-504,Bremer Werkzeug GmbH,Klaus Weber,klaus.weber@bremerwerkzeug.example,bremerwerkzeug.example,DE,2026-09-25,Kenji Sato,new

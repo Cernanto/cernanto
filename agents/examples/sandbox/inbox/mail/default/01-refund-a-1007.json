@@ -1,0 +1,13 @@
+{
+  "messageId": "<c1a2e3f4-1007@mail.example.net>",
+  "from": {
+    "address": "grace.mueller@example.net",
+    "name": "Grace Mueller"
+  },
+  "to": ["office@acmeledgers.example"],
+  "cc": [],
+  "subject": "Refund for order A-1007",
+  "text": "Hello,\n\nI received order A-1007 on 22 September, but the desk pad is a different colour than the one I ordered. It is unused and still in its packaging. Could I return it for a refund?\n\nThanks,\nGrace Mueller",
+  "receivedAt": "2026-09-24T08:12:00Z",
+  "attachments": []
+}

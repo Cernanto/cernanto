@@ -1,0 +1,7 @@
+{
+  "kind": "delivery",
+  "deliveryId": "d-1",
+  "source": "stripe",
+  "headers": { "stripe-signature": "t=1,v1=abc" },
+  "bodyBase64": "eyJ0eXBlIjoieCJ9"
+}

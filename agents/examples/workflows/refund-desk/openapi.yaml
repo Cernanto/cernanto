@@ -1,0 +1,48 @@
+openapi: 3.1.0
+info:
+  title: Refund desk
+  version: 1.0.0
+  description: "The storefront's road to the refund desk: a customer's request about an order, answered under the refund policy."
+paths:
+  /refund-requests:
+    post:
+      operationId: submitRefundRequest
+      summary: Submit a customer's request about an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, message]
+              properties:
+                orderId:
+                  type: string
+                  description: The order the customer writes about, as the shop names it.
+                message:
+                  type: string
+                  description: The customer's message, verbatim.
+      responses:
+        '200':
+          description: The desk's decision and the reply for the customer.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [decision, reply]
+                properties:
+                  decision:
+                    type: string
+                    enum: [refunded, refused, escalated]
+                    description: Refunded under the policy, refused with the policy's reason, or escalated to a person.
+                  reply:
+                    type: string
+                    description: The reply to send the customer.
+                  refundId:
+                    type: string
+                    description: The refund's id when one was made.
+                  amount:
+                    type: number
+                    description: The amount refunded, when one was made.
+        '404':
+          description: No order with that id.

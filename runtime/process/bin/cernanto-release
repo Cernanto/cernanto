@@ -1,0 +1,79 @@
+#!/bin/sh
+# Copyright (c) 2026 Cernanto. All rights reserved.
+# SPDX-License-Identifier: BUSL-1.1
+#
+# The release a host runs: the highest installed under the releases
+# folder, which the launcher starts and the
+# operator's tools read, the one rule in one place. The folders whose
+# runner is in place, never one still being laid (`.part`), the newest
+# packed first (release.json's `packed`) and the version order among those
+# with no pack time. Prints the folder; fails when none is installed.
+#
+#   cernanto-release [releases folder]    the folder defaults to /opt/cernanto/releases
+#   cernanto-release --help               says this form
+set -eu
+case "${1:-}" in
+  -h | --help)
+    cat <<'HELP'
+cernanto-release: prints the release a host runs here, the highest installed
+
+  cernanto-release [releases folder]
+
+The folder defaults to /opt/cernanto/releases. A release is a folder of it whose
+runner is in place; one still being laid (.part) is never chosen. The newest
+packed comes first, and the version order decides among those with no pack time.
+HELP
+    exit 0
+    ;;
+  -*)
+    echo "usage: cernanto-release [releases folder]" >&2
+    exit 2
+    ;;
+esac
+[ "$#" -le 1 ] || {
+  echo "usage: cernanto-release [releases folder]" >&2
+  exit 2
+}
+RELEASES="${1:-${CERNANTO_RELEASES:-/opt/cernanto/releases}}"
+NODE=""
+# A Node to read the releases with: the newest installed release's own,
+# never one of a release still being laid (`.part`), else the machine's.
+for candidate in "$RELEASES"/*/bin/node; do
+  case "$candidate" in *.part/bin/node) continue ;; esac
+  [ -x "$candidate" ] && NODE="$candidate"
+done
+[ -n "$NODE" ] || NODE="$(command -v node || true)"
+[ -n "$NODE" ] || { echo "cernanto-release: no node to read the releases with under $RELEASES" >&2; exit 1; }
+exec "$NODE" -e '
+const { readdirSync, readFileSync, existsSync } = require("node:fs");
+const { join } = require("node:path");
+const dir = process.argv[1];
+const runs = (name) => name.match(/\d+|\D+/g) ?? [];
+const compare = (a, b) => {
+  const l = runs(a), r = runs(b);
+  for (let i = 0; i < Math.max(l.length, r.length); i += 1) {
+    if (l[i] === undefined) return -1;
+    if (r[i] === undefined) return 1;
+    const n = /^\d+$/.test(l[i]) && /^\d+$/.test(r[i]);
+    const o = n ? Number(l[i]) - Number(r[i]) : l[i].localeCompare(r[i]);
+    if (o !== 0) return o < 0 ? -1 : 1;
+  }
+  return 0;
+};
+const packed = (name) => {
+  try { const b = JSON.parse(readFileSync(join(dir, name, "release.json"), "utf8")).packed; return typeof b === "string" && b !== "" ? b : undefined; } catch { return undefined; }
+};
+let names;
+try { names = readdirSync(dir); } catch { names = []; }
+const installed = names.filter((n) => !n.endsWith(".part") && existsSync(join(dir, n, "runtime/process/dist/agent/bin.js")));
+installed.sort((a, b) => {
+  const x = packed(a), y = packed(b);
+  if (x !== undefined && y !== undefined && x !== y) return x < y ? -1 : 1;
+  if (x !== undefined && y === undefined) return 1;
+  if (x === undefined && y !== undefined) return -1;
+  return compare(a, b);
+});
+const chosen = installed.at(-1);
+if (chosen === undefined) { console.error(`cernanto-release: no release is installed under ${dir}`); process.exit(1); }
+console.log(join(dir, chosen));
+' -- "$RELEASES"

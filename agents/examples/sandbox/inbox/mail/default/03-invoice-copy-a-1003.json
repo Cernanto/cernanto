@@ -1,0 +1,13 @@
+{
+  "messageId": "<a-1003-copy@example.com>",
+  "from": {
+    "address": "lena.fischer@example.com",
+    "name": "Lena Fischer"
+  },
+  "to": ["office@acmeledgers.example"],
+  "cc": [],
+  "subject": "Invoice copy needed for A-1003",
+  "text": "Could you send me a copy of the invoice for order A-1003? Our accounting needs it for the quarter.\n\nBest regards,\nLena Fischer",
+  "receivedAt": "2026-09-25T16:05:00Z",
+  "attachments": []
+}

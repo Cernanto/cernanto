@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+name: An example, a connector or an interface
+description: Propose something for the examples tree before writing it.
+labels: []
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What it is
+      options:
+        - An example workflow
+        - A connector implementing a standard interface
+        - A standard interface
+        - A client module for a provider
+    validations:
+      required: true
+  - type: textarea
+    id: does
+    attributes:
+      label: What it does
+      description: The task it replaces or the service it reaches, in a few sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: spec
+    attributes:
+      label: A draft of the spec
+      description: Optional. The spec as you would write it, Uses included.
+      render: markdown

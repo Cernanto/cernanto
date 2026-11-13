@@ -1,0 +1,9 @@
+{
+  "kind": "log",
+  "agentId": "ops/notifier",
+  "callId": "call-4",
+  "seq": 0,
+  "at": "2026-01-01T00:00:00Z",
+  "level": "error",
+  "message": "delivery failed"
+}

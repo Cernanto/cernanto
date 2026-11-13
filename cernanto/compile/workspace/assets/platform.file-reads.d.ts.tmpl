@@ -1,0 +1,53 @@
+
+// The read-only filesystem, present because the specification grants
+// files: read the paths ./assets.js exports. Nothing here writes.
+// (import.meta.url is how the generated assets module anchors those
+// paths on its own location; agent code never needs it. Declared the
+// way @types/node declares it, so a workspace that also sees that
+// package merges cleanly.)
+interface ImportMeta {
+  url: string;
+}
+declare module 'node:fs' {
+  interface AssetStats {
+    size: number;
+    isFile(): boolean;
+    isDirectory(): boolean;
+  }
+  interface AssetReadStream {
+    [Symbol.asyncIterator](): AsyncIterableIterator<Buffer | string>;
+    on(event: string, listener: (...args: unknown[]) => void): AssetReadStream;
+    pipe<T>(destination: T, options?: { end?: boolean }): T;
+    destroy(error?: Error): AssetReadStream;
+  }
+  export function readFileSync(path: string, encoding: BufferEncoding): string;
+  export function readFileSync(
+    path: string,
+    options: { encoding: BufferEncoding; flag?: string },
+  ): string;
+  export function readFileSync(
+    path: string,
+    options?: { encoding?: null; flag?: string } | null,
+  ): Buffer;
+  export function statSync(path: string): AssetStats;
+  export function readdirSync(path: string): string[];
+  export function createReadStream(
+    path: string,
+    options?: { encoding?: BufferEncoding; start?: number; end?: number; highWaterMark?: number },
+  ): AssetReadStream;
+}
+declare module 'node:fs/promises' {
+  export function readFile(path: string, encoding: BufferEncoding): Promise<string>;
+  export function readFile(
+    path: string,
+    options: { encoding: BufferEncoding; flag?: string },
+  ): Promise<string>;
+  export function readFile(
+    path: string,
+    options?: { encoding?: null; flag?: string } | null,
+  ): Promise<Buffer>;
+  export function stat(
+    path: string,
+  ): Promise<{ size: number; isFile(): boolean; isDirectory(): boolean }>;
+  export function readdir(path: string): Promise<string[]>;
+}

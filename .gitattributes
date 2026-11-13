@@ -1,0 +1,5 @@
+*.cern binary
+*.cern diff=cern
+# A package is current for its spec by the spec's bytes: a spec keeps
+# its line endings on every system.
+*.cern*.md text eol=lf

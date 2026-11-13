@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Something is wrong
+description: A compile, a deploy or a running agent did not do what its spec says.
+labels: []
+body:
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What you ran, what came back, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: spec
+    attributes:
+      label: The spec that reproduces it
+      description: The smallest spec that shows the problem, with its Uses. Issues come with a spec; a fix to a platform agent is a sentence in its spec that the maintainers recompile.
+      render: markdown
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The output of `cernanto --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where it ran
+      options:
+        - The dev plane on macOS
+        - The dev plane on Linux
+        - The dev plane on Windows
+        - A plane of several servers
+    validations:
+      required: true
+  - type: textarea
+    id: trace
+    attributes:
+      label: The trace or the deploy log
+      description: The output of `cernanto trace <call>` or of the deploy, as printed.
+      render: text
