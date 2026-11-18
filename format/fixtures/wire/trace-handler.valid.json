@@ -1,0 +1,12 @@
+{
+  "kind": "handler",
+  "agentId": "notifications/telegram-send",
+  "callId": "call-2",
+  "seq": 1,
+  "at": "2026-01-01T00:00:00Z",
+  "handler": "send",
+  "input": { "chatId": "risk-team", "text": "hello" },
+  "output": { "delivered": true },
+  "parentCallId": "call-1",
+  "durationMs": 12.5
+}

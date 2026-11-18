@@ -1,0 +1,7 @@
+contact_id,name,email,company,role
+CT-1,Maria Holm,maria.holm@nordicventures.example,Nordic Ventures,Operations lead
+CT-2,Henrik Aas,henrik.aas@fjordlogistics.example,Fjord Logistics AS,CFO
+CT-3,Rita Costa,rita.costa@lisboacafes.example,Lisboa Cafes Lda,Owner
+CT-4,Klaus Weber,klaus.weber@bremerwerkzeug.example,Bremer Werkzeug GmbH,Head of purchasing
+CT-5,Anna Lindqvist,anna.lindqvist@skandiabygg.example,Skandia Bygg AB,Finance manager
+CT-6,Juha Makinen,juha.makinen@helsinkifoods.example,Helsinki Foods Oy,Controller

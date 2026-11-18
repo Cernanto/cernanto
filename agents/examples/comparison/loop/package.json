@@ -1,0 +1,12 @@
+{
+  "name": "refund-loop",
+  "private": true,
+  "type": "module",
+  "description": "The refund policy as a prompt-driven agent loop on a vendor SDK, for the comparison beside examples/workflows/refund-desk.",
+  "scripts": {
+    "start": "node --experimental-strip-types refund-loop.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.60.0"
+  }
+}

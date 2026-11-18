@@ -1,0 +1,13 @@
+{
+  "domain": "acmeledgers.example",
+  "mailboxes": {
+    "default": {
+      "address": "office@acmeledgers.example",
+      "name": "Acme Ledgers"
+    },
+    "billing": {
+      "address": "billing@acmeledgers.example",
+      "name": "Acme Ledgers Billing"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+# Copyright (c) 2026 Cernanto. All rights reserved.
+# SPDX-License-Identifier: BUSL-1.1
+#
+# The Cernanto host on a server, which does the plane's work on this
+# machine: the
+# host job `cernanto/host` run by the release's block under the highest
+# release installed under /opt/cernanto/releases. It runs as root, as
+# every program that runs other users' processes does: it starts every
+# copy the plane places here as the plane's user (the owner of its root,
+# `cernanto`), with no capability and an empty bounding set, in a pid
+# and mount namespace of its own, and it alone keeps its privileges.
+# Install as /etc/systemd/system/cernanto-host.service.
+[Unit]
+Description=Cernanto host
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Environment=HOME=/var/lib/cernanto
+WorkingDirectory=/var/lib/cernanto
+ExecStart=/opt/cernanto/bin/cernanto-host
+# The stop is the host's word on the plane: every copy here reads it and
+# leaves within its grace, the host job ends the stragglers and exits.
+ExecStop=/opt/cernanto/bin/cernanto-host --stop
+# The restores' private roots live under /run/cernanto, root's alone;
+# kept across a restart of the unit, since the restored trees outlive
+# the host job.
+RuntimeDirectory=cernanto
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+# The host job ends on an upgrade for the unit to start it again under the
+# new release, and comes back after a crash, which the journal keeps.
+Restart=always
+RestartSec=2
+KillMode=mixed
+TimeoutStopSec=150
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

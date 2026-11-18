@@ -1,0 +1,13 @@
+{
+  "messageId": "<tl-5590@thameslighting.example>",
+  "from": {
+    "address": "accounts@thameslighting.example",
+    "name": "Thames Lighting Ltd"
+  },
+  "to": ["billing@acmeledgers.example"],
+  "cc": [],
+  "subject": "Invoice TL-5590",
+  "text": "Please find our invoice TL-5590 for the desk lamps, GBP 820.00, due 20 October. The PDF follows by post as your portal requested.\n\nThames Lighting",
+  "receivedAt": "2026-09-22T09:00:00Z",
+  "attachments": []
+}

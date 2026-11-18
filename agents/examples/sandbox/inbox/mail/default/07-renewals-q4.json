@@ -1,0 +1,19 @@
+{
+  "messageId": "<renewals-q4@acmeledgers.example>",
+  "from": {
+    "address": "ines.moreau@acmeledgers.example",
+    "name": "Ines Moreau"
+  },
+  "to": ["office@acmeledgers.example"],
+  "cc": ["dana.swope@acmeledgers.example"],
+  "subject": "Contract renewals Q4",
+  "text": "Attached are the three Nordic contracts ending this quarter with their values. Skandia is the one to watch; they asked for a discount in June.\n\nInes",
+  "receivedAt": "2026-09-26T15:45:00Z",
+  "attachments": [
+    {
+      "name": "renewals-q4.csv",
+      "contentType": "text/csv",
+      "bytes": "Y29tcGFueSxjb250cmFjdF9pZCxlbmRfZGF0ZSx2YWx1ZV9ldXIsb3duZXIKU2thbmRpYSBCeWdnIEFCLEMtMjAyNC0wMTgsMjAyNi0xMS0zMCw0ODAwMCxJbmVzIE1vcmVhdQpGam9yZCBMb2dpc3RpY3MgQVMsQy0yMDI1LTAwMywyMDI2LTEyLTE1LDI2NTAwLEluZXMgTW9yZWF1CkhlbHNpbmtpIEZvb2RzIE95LEMtMjAyNS0wMTEsMjAyNy0wMS0zMSwxOTgwMCxJbmVzIE1vcmVhdQo="
+    }
+  ]
+}

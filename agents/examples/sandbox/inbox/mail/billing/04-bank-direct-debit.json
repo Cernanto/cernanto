@@ -1,0 +1,13 @@
+{
+  "messageId": "<dd-2026-09-30@sparbank.example>",
+  "from": {
+    "address": "no-reply@sparbank.example",
+    "name": "Sparbank"
+  },
+  "to": ["billing@acmeledgers.example"],
+  "cc": [],
+  "subject": "Direct debit notice: 30 September",
+  "text": "A direct debit of EUR 2140.00 in favour of Berlin Buero Vermietung will be collected on 30 September.",
+  "receivedAt": "2026-09-26T06:00:00Z",
+  "attachments": []
+}

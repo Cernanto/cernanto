@@ -1,0 +1,37 @@
+# Copyright (c) 2026 Cernanto.
+# SPDX-License-Identifier: Apache-2.0
+#
+# The checks a fresh clone can break: install, build, typecheck, lint
+# and the tests the packages carry. The maintainers' tiers (the exam,
+# the integration suites, the native proofs and the plane's tiers) run on their
+# own infrastructure before a change reaches this repository.
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+      - name: build, typecheck, lint, test
+        timeout-minutes: 15
+        run: pnpm run build && pnpm run typecheck && pnpm run lint && pnpm test
+        env:
+          # Four concurrent packages starve a 4-core runner's event loops.
+          npm_config_workspace_concurrency: '3'

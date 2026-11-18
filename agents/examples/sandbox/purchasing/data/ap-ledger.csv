@@ -1,0 +1,4 @@
+entry_id,vendor_id,invoice_number,po_id,amount,currency,posted_at,status
+AP-3001,V-103,BBV-2026-09,,2140.00,EUR,2026-09-01,paid
+AP-3002,V-101,HK-77640,PO-1039,1710.00,EUR,2026-08-20,paid
+AP-3003,V-100,NP-2026-0388,PO-1037,5820.00,EUR,2026-08-14,paid

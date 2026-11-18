@@ -1,0 +1,32 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 737 >>
+stream
+BT /F1 11 Tf 50 790 Td 15 TL (Nordwind Paper GmbH) Tj T* (Kanalstrasse 12, 20457 Hamburg) Tj T* (VAT DE811223344) Tj T* () Tj T* (INVOICE NP-2026-0417) Tj T* (Invoice date: 2026-09-15) Tj T* (Due date: 2026-10-15) Tj T* (Bill to: Acme Ledgers GmbH, billing@acmeledgers.example) Tj T* (Purchase order: PO-1042) Tj T* () Tj T* (Description                          Qty      Unit     Amount) Tj T* (A4 copy paper, 80 g, box of 2500    200     24.50    4900.00) Tj T* (Toner cartridge TN-2420              12     89.00    1068.00) Tj T* (Delivery                              1     32.00      32.00) Tj T* () Tj T* (Total EUR 6000.00) Tj T* (Currency: EUR) Tj T* (Payment terms: 30 days net) Tj T* (IBAN DE02 1203 0000 0000 2020 51) Tj T* ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001029 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1099
+%%EOF

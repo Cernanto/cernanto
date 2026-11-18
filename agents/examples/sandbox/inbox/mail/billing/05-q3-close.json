@@ -1,0 +1,13 @@
+{
+  "messageId": "<q3-close@acmeledgers.example>",
+  "from": {
+    "address": "dana.swope@acmeledgers.example",
+    "name": "Dana Swope"
+  },
+  "to": ["billing@acmeledgers.example"],
+  "cc": [],
+  "subject": "Q3 close: AP cut-off is Friday",
+  "text": "Every invoice received by Friday noon goes into Q3. Anything after goes into October. Post what you have.\n\nDana",
+  "receivedAt": "2026-09-26T08:30:00Z",
+  "attachments": []
+}

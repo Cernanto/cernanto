@@ -1,0 +1,10 @@
+{
+  "currency": "EUR",
+  "bands": [
+    { "upTo": 1000, "approver": "Rami Ben-Ari", "chat": "@rami" },
+    { "upTo": 5000, "approver": "Lior Katz", "chat": "@lior" },
+    { "upTo": null, "approver": "Dana Swope", "chat": "@dana" }
+  ],
+  "controller": { "name": "Dana Swope", "chat": "@dana" },
+  "tolerancePercent": 2
+}

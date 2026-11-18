@@ -1,0 +1,13 @@
+{
+  "messageId": "<reminder-77812@hafenkaffee.example>",
+  "from": {
+    "address": "buchhaltung@hafenkaffee.example",
+    "name": "Hafen Kaffee Roesterei"
+  },
+  "to": ["billing@acmeledgers.example"],
+  "cc": [],
+  "subject": "Payment reminder: invoice HK-77812",
+  "text": "Hello,\n\nA friendly reminder that invoice HK-77812 (EUR 1860.00) is due on 2 October. The PDF was sent on 18 September.\n\nHafen Kaffee",
+  "receivedAt": "2026-09-25T10:10:00Z",
+  "attachments": []
+}

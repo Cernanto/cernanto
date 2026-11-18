@@ -1,0 +1,2988 @@
+# Copyright (c) 2026 Cernanto.
+# SPDX-License-Identifier: Apache-2.0
+openapi: 3.1.0
+info:
+  title: Cernanto API
+  version: 0.2.0
+  license:
+    name: Apache License, Version 2.0
+    identifier: Apache-2.0
+  description: "The plane's public API, the one thing outside callers speak to; nothing else of the plane is ever exposed. The operations are the cli's verbs and the oauth landing, named as the cli names them. Answers are JSON unless an operation says otherwise; an error answers `{error: {kind, message}}` with a status by the kind: terminal and contract-violation 400, judgment-inconclusive 422, retryable and target-unavailable 503, an unexpected failure 500. A request no operation matches is answered 404 with exactly `the gateway has no route for <METHOD> <url>`, carrying no kind. Bodies arrive whole; a body over 256 MiB is refused 413."
+servers:
+  - url: http://127.0.0.1:7434
+    description: The plane on this machine.
+security:
+  - operatorToken: []
+tags:
+  - name: plane
+    description: "The plane: its status, its version, the configuration's coder, the tokens, the release its hosts upgrade to, a host's drain."
+  - name: agents
+    description: "The deployed agents: the fleet, one agent, its calls, its program."
+  - name: calls
+    description: "The calls: the list, one call's records and tree, the live stream, the cancel."
+  - name: deploy
+    description: "The pipeline: the landing of packages, the compile, the packages themselves."
+  - name: auth
+    description: "The agents' accounts: what is logged in, what is waiting for the operator, the answers and the logouts."
+  - name: ingress
+    description: "The oauth landing: an open path."
+  - name: documents
+    description: The API's own description.
+  - name: health
+    description: The probes and counters for the cluster and the scrapers.
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      tags:
+        - health
+      summary: "Answers {ok: true} when the substrate behind the API answers."
+      security: []
+      responses:
+        "200":
+          description: The substrate answered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Healthz"
+        "503":
+          description: "Exactly `the substrate did not answer within two seconds`, or `the substrate is unhealthy: <its words>` when the ask failed; kind retryable."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /metrics:
+    get:
+      operationId: metrics
+      tags:
+        - health
+      summary: "The API's own counters in the Prometheus text format."
+      responses:
+        "200":
+          description: "A `# TYPE cernanto_gateway_requests_total counter` line, then one `cernanto_gateway_requests_total{method=\"<METHOD>\",status=\"<status>\"} <count>` line per pair."
+          content:
+            text/plain; version=0.0.4:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/upgrade:
+    put:
+      operationId: upgrade
+      tags:
+        - plane
+      summary: "Names the release the plane's hosts upgrade to, one host at a time, each draining first; a plane of one machine refuses."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpgradeRequest"
+      responses:
+        "200":
+          description: "The release pointer as written."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpgradeResult"
+        "400":
+          description: "A version that is not a release name, or a plane of one machine: `{error: {kind: \"terminal\", message}}`, the backend's words."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/hosts/{host}/drain:
+    post:
+      operationId: drainHost
+      tags:
+        - plane
+      summary: "Tells one host to let its copies go for the other hosts to take; a plane of one machine refuses."
+      parameters:
+        - $ref: "#/components/parameters/host"
+      responses:
+        "202":
+          description: "The host whose drain word is written."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DrainHostResult"
+        "400":
+          description: "A host no heartbeat names, or a plane of one machine: `{error: {kind: \"terminal\", message}}`, the backend's words."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/ls:
+    get:
+      operationId: ls
+      tags:
+        - agents
+      summary: "Every agent of the fleet: status, resources, journal, calls in and out, the calls active now, ai usage and cost; focused on one agent, its functions."
+      parameters:
+        - $ref: "#/components/parameters/agentQ"
+      responses:
+        "200":
+          description: The rows; metrics says whether any row carries sampled figures.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LsResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/agents:
+    get:
+      operationId: agents
+      tags:
+        - agents
+      summary: "The fleet's rows as shipped, its generations and its conditions."
+      responses:
+        "200":
+          description: The rows.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentsResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/agents/{agentId}:
+    get:
+      operationId: describe
+      tags:
+        - agents
+      summary: "One agent: its row as shipped and its contract."
+      parameters:
+        - $ref: "#/components/parameters/agentId"
+      responses:
+        "200":
+          description: The agent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DescribeResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: "Exactly `no agent \"<agentId>\"`, carrying no kind."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: agentDelete
+      tags:
+        - agents
+      summary: Undeploys one agent and its tester; refused while deployed agents depend on it unless forced.
+      parameters:
+        - $ref: "#/components/parameters/agentId"
+        - $ref: "#/components/parameters/force"
+      responses:
+        "200":
+          description: "What the removal did, verbatim."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDeleteResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: "Exactly `no agent \"<agentId>\"`, carrying no kind."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 'Nothing removed: `{error: {kind: "terminal", message: "deployed agents depend on \"<agentId>\": <the dependents, comma joined>"}, dependents}`.'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDeleteConflict"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/agents/{agentId}/invoke/{function}:
+    post:
+      operationId: invoke
+      tags:
+        - agents
+      summary: "Calls one exported function of a deployed agent and waits for its answer, for as long as it works."
+      description: "The row gate (an id nothing is deployed as: 404; a module is never served, and an interface is served by its default implementor, the gate judging that id, or refused when it has none: 400), then one call under the body's idempotency key, waited for until it answers. A target-unavailable failure (a deploy still converging) repeats the call every 300 milliseconds for up to sixty seconds before answering 503."
+      parameters:
+        - $ref: "#/components/parameters/agentId"
+        - $ref: "#/components/parameters/functionName"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvokeRequest"
+      responses:
+        "200":
+          description: "The function's answer and the call's id."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvokeResponse"
+        "400":
+          description: "Exactly `agent \"<agentId>\" is a module; it runs inside <the composing agents, sorted, comma-separated, or \"no agent yet\">: invoke one of them`, or `agent \"<agentId>\" is an interface with no default implementor; it is implemented by <the implementors, sorted, comma-separated, or \"no agent yet\">`; else the callee's own terminal or contract-violation error."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: "Exactly `no agent \"<agentId>\"`, carrying no kind, for an id nothing is deployed as; or exactly `agent \"<agentId>\" has no function \"<function>\"; cernanto contract <agentId> lists its functions`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/Inconclusive"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          description: "After sixty seconds of target-unavailable: `{error: {kind: \"retryable\", message: \"invoke <service>/<function> failed: <its message>\"}}`; else the callee's retryable error."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/agents/{agentId}/invoke/{function}/stream:
+    post:
+      operationId: invokeStream
+      tags:
+        - agents
+      summary: "Calls one exported function of a deployed agent and answers as server-sent events, opened by a `: stream open` comment line with a `: ping` comment every fifteen seconds: the call's id once a copy took it, each record as the copy makes it, then its answer or its failure."
+      description: "The row gate of `invoke` first, answered in its statuses before the stream opens; then one call under the body's idempotency key, followed from its acceptance by the copy that took it and joined with what the store holds, so every record of the call is told once, in the order of its runs and their places, and the stream ends with the call's answer."
+      parameters:
+        - $ref: "#/components/parameters/agentId"
+        - $ref: "#/components/parameters/functionName"
+        - $ref: "#/components/parameters/streamView"
+        - $ref: "#/components/parameters/details"
+        - $ref: "#/components/parameters/debug"
+        - $ref: "#/components/parameters/zone"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvokeRequest"
+      responses:
+        "200":
+          description: "The stream; it ends with the call's answer or its failure, or when the client goes."
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: "Each data event is one InvokeStreamEvent as JSON."
+        "400":
+          description: "As `invoke` answers it: a module, or an interface with no default implementor, named in the same words."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: "As `invoke` answers it: exactly `no agent \"<agentId>\"`, or exactly `agent \"<agentId>\" has no function \"<function>\"; cernanto contract <agentId> lists its functions`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/agents/{agentId}/start:
+    post:
+      operationId: agentStart
+      tags:
+        - agents
+      summary: "Starts an agent's program again: a new version of the same code runs it from the top."
+      parameters:
+        - $ref: "#/components/parameters/agentId"
+      responses:
+        "202":
+          description: The start is on the list; the plane births the version that runs it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentStartResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/agents/{agentId}/calls/stream:
+    get:
+      operationId: callsStream
+      tags:
+        - calls
+      summary: "Holds the socket open as server-sent events, opened by a `: stream open` comment line: one `data: <record as JSON>` event per new record of the agent's calls (under `view=live`, the record with its lines as a LiveRecord), a `: ping` comment every fifteen seconds."
+      parameters:
+        - $ref: "#/components/parameters/agentId"
+        - $ref: "#/components/parameters/backlog"
+        - $ref: "#/components/parameters/since"
+        - $ref: "#/components/parameters/streamView"
+        - $ref: "#/components/parameters/details"
+        - $ref: "#/components/parameters/debug"
+        - $ref: "#/components/parameters/zone"
+      responses:
+        "200":
+          description: The stream; it ends when the client goes.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: "Each data event is one TraceRecord as JSON, or, under `view=live`, one LiveRecord: the record and the lines the trace view reads it as."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/history:
+    get:
+      operationId: history
+      tags:
+        - agents
+      summary: "Which package ran when, newest first: every generation of the fleet, or one agent's."
+      parameters:
+        - $ref: "#/components/parameters/agentQ"
+      responses:
+        "200":
+          description: "The entries, newest first."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/calls:
+    get:
+      operationId: calls
+      tags:
+        - calls
+      summary: "Recent calls, newest first."
+      parameters:
+        - $ref: "#/components/parameters/agentQ"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: The calls.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/calls/{callId}:
+    get:
+      operationId: call
+      tags:
+        - calls
+      summary: "One call, a page at a time: what it is, a page of its records from `after`, the calls it caused as calls, and `next` when more records remain; with `view=live` the trace view's reading of the page's records."
+      parameters:
+        - $ref: "#/components/parameters/callId"
+        - $ref: "#/components/parameters/after"
+        - $ref: "#/components/parameters/streamView"
+        - $ref: "#/components/parameters/details"
+        - $ref: "#/components/parameters/debug"
+        - $ref: "#/components/parameters/zone"
+      responses:
+        "200":
+          description: The call and one page of its records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: "Exactly `no call \"<callId>\" is recorded`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/calls/{callId}/stream:
+    get:
+      operationId: callStream
+      tags:
+        - calls
+      summary: "One call whole, however large, as server-sent events that end when the call is told, opened by a `: stream open` comment line with a `: ping` comment every fifteen seconds: its call, then every record in order (with `tree` the calls it caused walked depth first, each entered before its records), and under `view` the trace view's lines with each record."
+      parameters:
+        - $ref: "#/components/parameters/callId"
+        - $ref: "#/components/parameters/tree"
+        - $ref: "#/components/parameters/view"
+        - $ref: "#/components/parameters/details"
+        - $ref: "#/components/parameters/debug"
+        - $ref: "#/components/parameters/zone"
+      responses:
+        "200":
+          description: "The stream; it ends when the last record was sent, or when the client goes."
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: "Each data event is one CallStreamEvent as JSON: a call entered, a record (with its lines under a view), lines of the conversation that belong to no record, or the error that ended the stream."
+        "400":
+          description: "Exactly `a view reads one call: ask without tree`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: "Exactly `no call \"<callId>\" is recorded`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/calls/{callId}/cancel:
+    post:
+      operationId: cancel
+      tags:
+        - calls
+      summary: "Ends a call: the process holding it is asked to end it."
+      parameters:
+        - $ref: "#/components/parameters/callId"
+      responses:
+        "200":
+          description: "Always {ok: true}, whether the call was reached or had ended already."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/compiles/{compileId}/progress:
+    get:
+      operationId: compileProgress
+      tags:
+        - deploy
+      summary: "A compile's narration and outcome: its steps so far, and its answer or its failure once it ended."
+      parameters:
+        - $ref: "#/components/parameters/compileId"
+        - $ref: "#/components/parameters/take"
+        - $ref: "#/components/parameters/call"
+      responses:
+        "200":
+          description: The compile's progress.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompileProgressResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: "Exactly `no compile \"<compileId>\"`: no progress is held for the compile and the query names no call; asked with the call its start answered, a compile that has not reached its document yet answers `waiting`. A compile that ended without its last word leaves its document at `running`; the call's own end is the word on it."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/land:
+    post:
+      operationId: land
+      tags:
+        - deploy
+      summary: "Lands a package the plane holds into the fleet as its own row, with the packages it needs: the closure resolved through the registry, the admission, the rows shipped."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LandRequest"
+      responses:
+        "200":
+          description: "What landed, what the registry supplied, and the warnings."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LandResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/compile:
+    post:
+      operationId: compile
+      tags:
+        - deploy
+      summary: "Compiles the targets the landing found not current: the workspace upload, the given contracts, the switches; the compile runs behind the API as a run of its own, nothing ships."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompileRequest"
+      responses:
+        "202":
+          description: "The compile's call is stored on the plane; follow the compile by its progress."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallStarted"
+        "400":
+          description: "Exactly `a compile needs its compileId`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          description: "Exactly `the compile submit failed: <its message>`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/deploy:
+    post:
+      operationId: deploy
+      tags:
+        - deploy
+      summary: "The whole road for the targets the landing handed over: the plane compiles, verifies when asked, ships the rows inside itself and the run answers when they converged."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompileRequest"
+      responses:
+        "202":
+          description: "The compile's call is stored on the plane; follow the compile by its progress."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallStarted"
+        "400":
+          description: "Exactly `a compile needs its compileId`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          description: "Exactly `the compile submit failed: <its message>`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/packages/{digest}:
+    get:
+      operationId: packageGet
+      tags:
+        - deploy
+      summary: "The package whole, its slices joined and sha-verified."
+      parameters:
+        - $ref: "#/components/parameters/digest"
+      responses:
+        "200":
+          description: The .cern bytes.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: "Exactly `no package \"<digest>\" on this plane`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: packagePut
+      tags:
+        - deploy
+      summary: Stores a package as 6 MiB slices committed by a manifest written last; an existing digest answers at once.
+      parameters:
+        - $ref: "#/components/parameters/digest"
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: The digest.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PackageStored"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          description: A body over 256 MiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/packages/{digest}/exists:
+    get:
+      operationId: packageExists
+      tags:
+        - deploy
+      summary: Whether the plane holds a package of this digest.
+      parameters:
+        - $ref: "#/components/parameters/digest"
+      responses:
+        "200":
+          description: "The answer, never a 404."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PackageExists"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/auth/accounts:
+    get:
+      operationId: authList
+      tags:
+        - auth
+      summary: "The agents' accounts and the asks they are parked on, by agent: what the auth list shows; an agent keeps its own alone."
+      parameters:
+        - $ref: "#/components/parameters/agentQ"
+      responses:
+        "200":
+          description: The accounts and the pending asks.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthListResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: authLogout
+      tags:
+        - auth
+      summary: "Forgets an agent's account whole: its value, its setup fields and its auth state; the next call that needs it asks again."
+      parameters:
+        - $ref: "#/components/parameters/agentRequiredQ"
+        - $ref: "#/components/parameters/nameRequiredQ"
+      responses:
+        "200":
+          description: The account is forgotten.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthLoggedOut"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: No such account, in the safe's words.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/auth/asks/{id}:
+    post:
+      operationId: authLogin
+      tags:
+        - auth
+      summary: "Answers a pending fields ask: the operator's filled fields become the asking agent's account and every call parked on it resumes."
+      parameters:
+        - $ref: "#/components/parameters/askId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLoginRequest"
+      responses:
+        "200":
+          description: The account is logged in; every call parked on it resumes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthLoggedIn"
+        "400":
+          description: "Exactly `an authorization or a display completes on the agent's side`, or the ask is answered already, in the safe's words."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: No such ask, in the safe's words.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /oauth/callback:
+    get:
+      operationId: oauthCallback
+      tags:
+        - ingress
+      summary: "The oauth landing: hands the provider's code to cernanto/auth for the account that pinned the state. A provider's own extra query parameters are taken as they come, never refused."
+      security: []
+      x-cernanto-open-query: true
+      parameters:
+        - $ref: "#/components/parameters/state"
+        - $ref: "#/components/parameters/code"
+        - $ref: "#/components/parameters/error"
+        - $ref: "#/components/parameters/errorDescription"
+      responses:
+        "200":
+          description: "`<h3>Authorized</h3><p>Account \"<account>\" is connecting. Return to the terminal.</p>`"
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: "`<h3>Unknown authorization</h3><p>This link was already used or never issued.</p>`"
+          content:
+            text/html:
+              schema:
+                type: string
+        "503":
+          description: "`<h3>Platform not ready</h3><p>Try the authorization link again shortly.</p>`"
+          content:
+            text/html:
+              schema:
+                type: string
+  /v1/tokens:
+    post:
+      operationId: tokenCreate
+      tags:
+        - plane
+      summary: Mints a named operator token; the plaintext comes back once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenCreateBody"
+      responses:
+        "200":
+          description: "The token, answered once in plaintext."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenCreated"
+        "400":
+          description: "Auth's refusals, answered 400."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: A duplicate name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    get:
+      operationId: tokenList
+      tags:
+        - plane
+      summary: "The plane's tokens, hashes never included."
+      responses:
+        "200":
+          description: "Auth's answer, verbatim."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokensResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/tokens/{name}:
+    delete:
+      operationId: tokenRevoke
+      tags:
+        - plane
+      summary: Revokes a token by name.
+      parameters:
+        - $ref: "#/components/parameters/tokenName"
+      responses:
+        "200":
+          description: The revoked token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenRevokeResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: An unknown name.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/harness:
+    get:
+      operationId: harnessView
+      tags:
+        - plane
+      summary: "The plane's AI coder."
+      responses:
+        "200":
+          description: "The coder, or null when none is set."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HarnessViewResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: harnessSet
+      tags:
+        - plane
+      summary: "Makes a vendor the plane's AI coder."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HarnessSetBody"
+      responses:
+        "200":
+          description: The stored row.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HarnessSetResult"
+        "400":
+          description: "A vendor or a mode off the list, refused by the document's validator naming the field before the operation runs."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/config/get:
+    post:
+      operationId: configGet
+      x-cernanto-secret: true
+      tags:
+        - plane
+      summary: "Reads one setting as the operator, or an interface's default by its key; the configuration is secret, so no record keeps the key or the value."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigGetBody"
+      responses:
+        "200":
+          description: The value, null when unset.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigGetResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/config/set:
+    post:
+      operationId: configSet
+      x-cernanto-secret: true
+      tags:
+        - plane
+      summary: "Writes one setting, plane-wide, as the operator; null removes it. The configuration is secret, so no record keeps the key or the value."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigSetBody"
+      responses:
+        "200":
+          description: Whether a value now stands at the key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigSetResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/config:
+    get:
+      operationId: configList
+      x-cernanto-secret: true
+      tags:
+        - plane
+      summary: "The configuration as the operator: one place's settings and default, or the map of every place; the configuration is secret, so no record keeps the listing."
+      parameters:
+        - name: place
+          in: query
+          required: false
+          description: "An agent's id: that place's settings and default alone; without one, every place with its mapping."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The mapping asked for, empty when nothing stands.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigListResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/openapi.json:
+    get:
+      operationId: openapiDocument
+      tags:
+        - documents
+      summary: "This document, as the API serves it."
+      parameters:
+        - name: host
+          in: header
+          required: false
+          description: "The host the request came through, as the client sent it: the served document's servers name it."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "The document, its servers rewritten to the request's own scheme and host."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenApiDocument"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+components:
+  securitySchemes:
+    operatorToken:
+      type: http
+      scheme: bearer
+      description: "An operator token, minted by tokenCreate and kept by auth as its sha256: the digest of the bearer names a live token. A request made at the plane's own machine (a loopback peer that names a loopback host, passed on by no front and sent by no other site's page) needs no bearer and is the operator `local`; a bearer equal to the file secrets/operator-token under the working folder is the operator `bootstrap`. Every operation demands it except /healthz and /oauth/callback."
+  parameters:
+    agentId:
+      name: agentId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: "The agent's id, url-encoded (its slashes as %2F)."
+    functionName:
+      name: function
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The exported function to call.
+    compileId:
+      name: compileId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: "A compile's id, the one its deploy or compile request named."
+    callId:
+      name: callId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: "A call's id."
+    host:
+      name: host
+      in: path
+      required: true
+      schema:
+        type: string
+      description: "A host's name, as the plane's nodes list it."
+    digest:
+      name: digest
+      in: path
+      required: true
+      schema:
+        type: string
+      description: "The package digest, `sha256:` and hex."
+    tokenName:
+      name: name
+      in: path
+      required: true
+      schema:
+        type: string
+    force:
+      name: force
+      in: query
+      schema:
+        type: string
+        enum:
+          - "true"
+      description: Removes the agent even when deployed agents depend on it.
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+    agentRequiredQ:
+      name: agent
+      in: query
+      required: true
+      schema:
+        type: string
+      description: The agent that owns the account.
+    nameRequiredQ:
+      name: name
+      in: query
+      required: true
+      schema:
+        type: string
+      description: The account's name.
+    askId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: A pending ask's id, as the auth list shows it.
+    agentQ:
+      name: agent
+      in: query
+      schema:
+        type: string
+      description: "One agent's id: keeps its rows, its calls or its history only."
+    take:
+      name: take
+      in: query
+      schema:
+        type: string
+        enum:
+          - "true"
+      description: "Removes an ended compile's progress as it is answered: the deploy's last read."
+    call:
+      name: call
+      in: query
+      schema:
+        type: string
+      description: "The call id the compile's start answered. With it, a compile no compiler has brought to its progress yet reads `waiting` for as long as that call still stands on the plane."
+    tree:
+      name: tree
+      in: query
+      schema:
+        type: string
+        enum:
+          - "true"
+      description: "Walks the calls this call caused as well, depth first in the order they began, each entered with its own call event before its records."
+    after:
+      name: after
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+      description: "The position a previous answer named as `next`: the count of the call's records answered before this page; zero when absent."
+    view:
+      name: view
+      in: query
+      schema:
+        type: string
+        enum:
+          - conversation
+          - live
+      description: "Renders the records as the trace view reads them, beside the records: `conversation` renders the call as the conversation of the agent that ran it, as it comes; `live` renders each record as an agent's live stream shows it."
+    streamView:
+      name: view
+      in: query
+      schema:
+        type: string
+        enum:
+          - live
+      description: "Renders each record as the trace view reads one record of an agent's live stream: every data event becomes a LiveRecord, the record with its lines."
+    details:
+      name: details
+      in: query
+      schema:
+        type: string
+        enum:
+          - "true"
+      description: "With `view`: expands the view's details (contexts, reasoning, whole values)."
+    debug:
+      name: debug
+      in: query
+      schema:
+        type: string
+        enum:
+          - "true"
+      description: "With `view`: includes the agent's own debug lines."
+    zone:
+      name: zone
+      in: query
+      schema:
+        type: string
+      description: "With `view`: the IANA time zone the view's clocks and stamps read in (`Asia/Tokyo`); utc when absent."
+    backlog:
+      name: backlog
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 1000
+      description: "How many recent records to deliver first (0 without one, capped at 1000)."
+    since:
+      name: since
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: "The moment the stream's reads start from: records at or after it, until one is seen (a deploy passes its own start, so the agent's earlier history is never read)."
+    state:
+      name: state
+      in: query
+      required: true
+      schema:
+        type: string
+    code:
+      name: code
+      in: query
+      schema:
+        type: string
+    error:
+      name: error
+      in: query
+      schema:
+        type: string
+    errorDescription:
+      name: error_description
+      in: query
+      schema:
+        type: string
+  responses:
+    BadRequest:
+      description: A terminal or contract-violation failure.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: 'No admitted bearer: exactly `unauthorized: the API needs the bearer`, or `unauthorized: the operator token "<name>" was revoked`.'
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Inconclusive:
+      description: A judgment-inconclusive failure.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unexpected:
+      description: A route that failed unexpectedly, the same shape.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unavailable:
+      description: "A retryable or target-unavailable failure: the platform agent behind the operation did not answer (a controller restart, a substrate hiccup), the same shape; retry."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    AgentCallRecord:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: agent-call
+        target:
+          type: string
+        handler:
+          type: string
+        args: {}
+        result: {}
+        error:
+          type: string
+        stack:
+          type: string
+        linked:
+          type: boolean
+        mocked:
+          type: boolean
+          description: A test run's mock answered the call in place of the target's deployment.
+        durationMs:
+          type: number
+        agentId:
+          type: string
+        callId:
+          type: string
+        attemptId:
+          type: string
+          description: The attempt of the call the record belongs to, when the record is the attempt's own.
+        run:
+          type: string
+          description: "The run that made the record, `<grant>.<count>`: runs order by their grant, then their count, as numbers."
+        place:
+          type: number
+          description: "The record's place in its run: inside one run the records order by it."
+        seq:
+          type: number
+        at:
+          type: string
+      required:
+        - kind
+        - target
+        - handler
+        - durationMs
+        - agentId
+        - callId
+        - seq
+        - at
+    AgentDeleteConflict:
+      description: "Deployed agents depend on the one being removed: nothing was removed, and the dependents are named beside the error."
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorEnvelope"
+        dependents:
+          type: array
+          items:
+            type: string
+      required:
+        - error
+        - dependents
+    AgentDeleteResult:
+      description: What an agent removal did.
+      type: object
+      properties:
+        removed:
+          type: string
+          description: The agent that was removed, when one was.
+        fleet:
+          type: number
+          description: How many rows the fleet still carries.
+        dependents:
+          type: array
+          items:
+            type: string
+          description: The rows whose uses name the agent.
+      required:
+        - dependents
+    AgentRow:
+      description: One fleet row as shipped.
+      allOf:
+        - $ref: "#/components/schemas/FleetAgentRowWire"
+    AgentsResult:
+      description: "The fleet's agents, generations and judgments."
+      type: object
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentRow"
+          description: One row per fleet row, as shipped.
+        generations:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenerationRow"
+          description: One row per generation.
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+          description: The document's judgments.
+      required:
+        - agents
+        - generations
+        - conditions
+    AgentStartResult:
+      description: "An agent program's start."
+      type: object
+      properties:
+        agentId:
+          type: string
+          description: The agent whose program starts.
+        run:
+          type: number
+          description: "Which run of the program this start asks for: one more than the run before it."
+        callId:
+          type: string
+          description: "Absent: the call is a new version's own, and its id exists once that version's process has booted."
+      required:
+        - agentId
+    UpgradeRequest:
+      description: "The release the plane's hosts upgrade to."
+      type: object
+      properties:
+        version:
+          type: string
+          description: "A release name: letters, digits, dots, dashes and underscores, a letter or digit first."
+      required:
+        - version
+    UpgradeResult:
+      description: "The release pointer as written."
+      type: object
+      properties:
+        version:
+          type: string
+      required:
+        - version
+    DrainHostResult:
+      description: "The host told to drain."
+      type: object
+      properties:
+        host:
+          type: string
+      required:
+        - host
+    BeginRecord:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: begin
+        of:
+          type: string
+          enum:
+            - handler
+            - step
+            - call
+        handler:
+          type: string
+        target:
+          type: string
+        linked:
+          type: boolean
+        label:
+          type: string
+        input: {}
+        args: {}
+        parentCallId:
+          type: string
+        callerAgentId:
+          type: string
+        agentId:
+          type: string
+        callId:
+          type: string
+        attemptId:
+          type: string
+          description: The attempt of the call the record belongs to, when the record is the attempt's own.
+        run:
+          type: string
+          description: "The run that made the record, `<grant>.<count>`: runs order by their grant, then their count, as numbers."
+        place:
+          type: number
+          description: "The record's place in its run: inside one run the records order by it."
+        seq:
+          type: number
+        at:
+          type: string
+      required:
+        - kind
+        - of
+        - agentId
+        - callId
+        - seq
+        - at
+    CompileAgentReport:
+      description: One agent's compile evidence, on the wire.
+      type: object
+      properties:
+        agentId:
+          type: string
+        status:
+          type: string
+          enum:
+            - failed
+            - compiled
+            - current
+            - skipped
+        verification:
+          type: string
+          enum:
+            - live
+            - none
+            - waiting
+        waitingFor:
+          type: array
+          items:
+            type: string
+        contractChange:
+          type: string
+          enum:
+            - none
+            - compatible
+            - breaking
+        attempts:
+          type: number
+        triageCount:
+          type: number
+        liveCycles:
+          type: number
+        costUsd:
+          type: number
+        durationMs:
+          type: number
+        inputTokens:
+          type: number
+        outputTokens:
+          type: number
+        cacheKey:
+          type: string
+        code:
+          type: string
+          enum:
+            - amended
+            - fresh
+            - regated
+            - refreshed
+            - planned
+          description: "How the code came to be: amended, regated, refreshed, fresh, or planned for a plan-only compile."
+        amendedFrom:
+          type: string
+          description: The digest of the previous compile this one descends from.
+        detail:
+          type: string
+        artifact:
+          type: string
+          description: "The packed artifact's digest in the plane store, when the compile packed it: every shipped service, and every seeded agent, modules included."
+        package:
+          type: string
+          description: "The .cern package of the agent in the plane store: the bytes the client writes back beside the spec."
+      required:
+        - agentId
+        - status
+        - attempts
+        - triageCount
+        - costUsd
+    CompileIssue:
+      description: One finding from the spec gates, on the wire.
+      type: object
+      properties:
+        code:
+          type: string
+        severity:
+          type: string
+          enum:
+            - error
+            - warning
+        agentId:
+          type: string
+        message:
+          type: string
+        line:
+          type: number
+        hint:
+          type: string
+      required:
+        - code
+        - severity
+        - agentId
+        - message
+    CompileProgressResponse:
+      description: "A compile's narration and outcome, read off its document: running, or ended with its answer or its failure; or waiting, for a compile that was started and that no compiler has brought to its document yet."
+      type: object
+      properties:
+        compileId:
+          type: string
+        callId:
+          type: string
+          description: "The compile's own call id: the id its trace is filed under, which a cancellation takes. For a waiting compile, the id the query named, which names no version yet."
+        status:
+          type: string
+          enum:
+            - waiting
+            - running
+            - done
+            - failed
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompileStepRecord"
+        answer:
+          $ref: "#/components/schemas/PlaneCompileResponse"
+        error:
+          $ref: "#/components/schemas/ErrorEnvelope"
+      required:
+        - compileId
+        - callId
+        - status
+        - steps
+    CompileStep:
+      description: The compile steps, in the order a watcher reads them.
+      type: string
+      enum:
+        - plan
+        - agent
+        - prepare
+        - change
+        - write code
+        - check code
+        - write tests
+        - check tests
+        - store
+        - deploy
+        - verify
+        - declare
+        - triage
+        - fix code
+        - fix tests
+        - retry
+        - done
+    CompileStepRecord:
+      description: "One narrated step of a compile: what happened, to which agent, in which attempt."
+      type: object
+      properties:
+        attemptId:
+          type: string
+        seq:
+          type: number
+        at:
+          type: string
+        subject:
+          type: string
+        step:
+          $ref: "#/components/schemas/CompileStep"
+        state:
+          type: string
+          enum:
+            - begin
+            - end
+            - note
+        detail:
+          type: string
+        ok:
+          type: boolean
+        durationMs:
+          type: number
+        attempt:
+          type: number
+        failures:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              message:
+                type: string
+            required:
+              - name
+              - message
+        result:
+          type: string
+          enum:
+            - compiled
+            - current
+            - failed
+            - skipped
+        verification:
+          type: string
+          enum:
+            - live
+            - none
+            - waiting
+        waitingFor:
+          type: array
+          items:
+            type: string
+        tests:
+          type: string
+          enum:
+            - reused
+            - updated
+        package:
+          type: string
+          description: "On an agent's end step: the digest of the stamped package the client writes beside the spec, stored the moment the agent ended."
+        spend:
+          type: object
+          properties:
+            inputTokens:
+              type: number
+            outputTokens:
+              type: number
+            costUsd:
+              type: number
+      required:
+        - attemptId
+        - seq
+        - at
+        - step
+        - state
+        - detail
+    CallStarted:
+      description: A call the API started and does not wait for.
+      type: object
+      properties:
+        callId:
+          type: string
+          description: "The started call's id, which a cancellation takes. It names no version: a process takes the call afterwards."
+      required:
+        - callId
+    CancelResponse:
+      description: The call was asked to end.
+      type: object
+      properties:
+        ok:
+          type: boolean
+          const: true
+      required:
+        - ok
+    Condition:
+      description: One judgment on the fleet.
+      type: object
+      properties:
+        type:
+          type: string
+          description: Which judgment this is.
+        status:
+          type: string
+          enum:
+            - "True"
+            - "False"
+          description: Whether it holds.
+        reason:
+          type: string
+          description: The one-word reason.
+        message:
+          type: string
+          description: The judgment in words.
+      required:
+        - type
+        - status
+        - reason
+        - message
+    AuthListResult:
+      description: "The agents' accounts, never a value, and the asks they are parked on."
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentAccount"
+        asks:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentAsk"
+      required:
+        - accounts
+        - asks
+    AgentAccount:
+      description: "One logged-in account of an agent, never its value."
+      type: object
+      properties:
+        agent:
+          type: string
+          description: The agent that owns the account.
+        name:
+          type: string
+          description: "The account's name: the one the agent's spec gave it, else the provider's word."
+        provider:
+          type: string
+          description: "The provider word (`example.com`, `mcp.example.com`, `postgres`)."
+        kind:
+          type: string
+          description: "The kind of what is stored: the value's kind, or `fields` for setup fields alone."
+        fieldNames:
+          type: array
+          items:
+            type: string
+        loggedInAt:
+          type: string
+          description: When the account was logged in, ISO.
+        loggedInBy:
+          type: string
+          description: The operator who logged it in, when known.
+      required:
+        - agent
+        - name
+        - provider
+        - kind
+        - fieldNames
+    AgentAsk:
+      description: "One ask an agent is parked on: what the operator's terminal renders, and everything it needs to answer it."
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - fields
+            - oauth
+            - display
+          description: "How the account logs in: `fields` is what the operator pastes, `oauth` is an authorization the operator completes in the browser, `display` is something the operator reads and acts on."
+        agent:
+          type: string
+          description: The agent that owns the account.
+        name:
+          type: string
+          description: The account's name.
+        provider:
+          type: string
+          description: The provider word.
+        agentId:
+          type: string
+          description: The agent whose call is waiting (the compiler's, when it asks on the agent's behalf during a compile).
+        callId:
+          type: string
+          description: The waiting call's id.
+        instructions:
+          type: string
+          description: Numbered steps an operator who has never used the provider's console follows blind.
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/CredentialField"
+        helpUrl:
+          type: string
+          description: The signed-in page of the provider's console where the steps start.
+        scopes:
+          type: array
+          items:
+            type: string
+          description: The oauth scopes the authorization must grant.
+        authorizationUrl:
+          type: string
+          description: The authorization url the operator opens, for `oauth` asks.
+        message:
+          type: string
+          description: The text the operator reads, for `display` asks.
+        refused:
+          type: string
+          description: "The provider's words, when the ask repeats a credential the provider refused."
+        requestedAt:
+          type: string
+      required:
+        - id
+        - kind
+        - agent
+        - name
+        - provider
+        - agentId
+        - callId
+        - requestedAt
+    CredentialField:
+      description: "One credential field the operator fills while logging an account in: its machine name and its human label; `secret` marks what the terminal masks as it is typed."
+      type: object
+      properties:
+        name:
+          type: string
+        label:
+          type: string
+        secret:
+          type: boolean
+      required:
+        - name
+        - label
+    AuthLoginRequest:
+      description: The operator's filled fields, by machine name.
+      type: object
+      properties:
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - fields
+    AuthLoggedIn:
+      type: object
+      properties:
+        agent:
+          type: string
+        name:
+          type: string
+        loggedIn:
+          type: boolean
+      required:
+        - agent
+        - name
+        - loggedIn
+    AuthLoggedOut:
+      type: object
+      properties:
+        agent:
+          type: string
+        name:
+          type: string
+        forgotten:
+          type: boolean
+      required:
+        - agent
+        - name
+        - forgotten
+    DescribeResult:
+      description: "One agent, whole: its row as shipped with its live facts and the contract it runs."
+      type: object
+      properties:
+        agent:
+          $ref: "#/components/schemas/AgentRow"
+        contract:
+          type: string
+          description: The contract text as the row recorded it; absent when the row carries none.
+      required:
+        - agent
+    ErrorEnvelope:
+      description: "A classified failure: the kind decides the status and whether a caller retries."
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - terminal
+            - retryable
+            - judgment-inconclusive
+            - contract-violation
+            - target-unavailable
+          description: Absent on a 404 for a path no route serves and on the not-found answers that name what is missing.
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        retryAfterMs:
+          type: integer
+          minimum: 1
+      required:
+        - message
+    ErrorResponse:
+      description: Every error the API answers, under the status its kind maps to.
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorEnvelope"
+      required:
+        - error
+    GenerationRow:
+      description: "One generation of an agent: a port-addressed immutable snapshot of one package, and the calls still pinned to it."
+      type: object
+      properties:
+        agentId:
+          type: string
+          description: The agent it snapshots.
+        gen:
+          type: number
+          description: The generation number.
+        port:
+          type: number
+          description: The port it answers on.
+        package:
+          type: string
+          description: The digest of the package it runs.
+        status:
+          type: string
+          enum:
+            - pending
+            - active
+            - draining
+          description: Where it stands.
+        composition:
+          type: object
+          additionalProperties:
+            type: string
+          description: The module agents composed into it, each to the digest of its package; absent when nothing is composed.
+        createdAt:
+          type: string
+          description: When it was planned.
+      required:
+        - agentId
+        - gen
+        - port
+        - package
+        - status
+        - createdAt
+    HandlerRecord:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: handler
+        handler:
+          type: string
+        input: {}
+        output: {}
+        error:
+          type: string
+        stack:
+          type: string
+        parentCallId:
+          type: string
+        callerAgentId:
+          type: string
+        durationMs:
+          type: number
+        agentId:
+          type: string
+        callId:
+          type: string
+        attemptId:
+          type: string
+          description: The attempt of the call the record belongs to, when the record is the attempt's own.
+        run:
+          type: string
+          description: "The run that made the record, `<grant>.<count>`: runs order by their grant, then their count, as numbers."
+        place:
+          type: number
+          description: "The record's place in its run: inside one run the records order by it."
+        seq:
+          type: number
+        at:
+          type: string
+      required:
+        - kind
+        - handler
+        - durationMs
+        - agentId
+        - callId
+        - seq
+        - at
+    HarnessRow:
+      description: The plane's AI coder, as the configuration keeps it.
+      type: object
+      properties:
+        vendor:
+          type: string
+          description: "The vendor: claude-code, codex or openai."
+        mode:
+          type: string
+          description: "How it is credentialed: plan (the machine's own login), api-key, or bedrock."
+      required:
+        - vendor
+        - mode
+    HarnessSetBody:
+      type: object
+      properties:
+        vendor:
+          type: string
+          enum:
+            - claude-code
+            - codex
+          description: The vendor to compile on.
+        mode:
+          type: string
+          enum:
+            - plan
+            - api-key
+            - bedrock
+          description: "How the vendor is credentialed: plan (the machine's own login), api-key, or bedrock."
+      required:
+        - vendor
+        - mode
+    HarnessSetResult:
+      description: The connected AI coder.
+      type: object
+      properties:
+        harness:
+          allOf:
+            - $ref: "#/components/schemas/HarnessRow"
+          description: The stored row.
+      required:
+        - harness
+    HarnessView:
+      description: The plane's AI coder.
+      type: object
+      properties:
+        vendor:
+          type: string
+          description: "The vendor: claude-code, codex or openai."
+        mode:
+          type: string
+          description: "How it is credentialed: plan, api-key or bedrock."
+        source:
+          type: string
+          description: Whether it was chosen from a machine login or connected.
+      required:
+        - vendor
+        - mode
+        - source
+    ConfigGetBody:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "The key of the setting: an agent's id, a slash and the setting's name (cernanto/trace/retention-minutes); an interface's default is <the interface id>/default (cernanto/decision/default)."
+      required:
+        - key
+    ConfigGetResult:
+      type: object
+      properties:
+        value:
+          description: "The value: the place's setting, null when it holds none under the name."
+      required:
+        - value
+    ConfigSetBody:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "The key to write, <agent id>/<name>."
+        value:
+          description: "The value, any JSON; null or absent removes the entry."
+      required:
+        - key
+    ConfigSetResult:
+      type: object
+      properties:
+        present:
+          type: boolean
+          description: True when a value now stands at the key, false when the entry is gone.
+      required:
+        - present
+    ConfigListResult:
+      type: object
+      properties:
+        configuration:
+          type: object
+          additionalProperties: true
+          description: "One place's mapping from names to values, or every place's mapping."
+      required:
+        - configuration
+    HarnessViewResult:
+      description: What the plane's AI coder is.
+      type: object
+      properties:
+        harness:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/HarnessView"
+          description: The harness, or null when none is connected.
+      required:
+        - harness
+    Healthz:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          const: true
+      required:
+        - ok
+    HistoryEntry:
+      description: One generation of an agent, as the history lists it.
+      type: object
+      properties:
+        at:
+          type: string
+          description: When the generation was planned.
+        agentId:
+          type: string
+        gen:
+          type: number
+        package:
+          type: string
+          description: The digest of the package it ran.
+        version:
+          type: string
+          description: "The package's version, when its row was installed from a package with one."
+        status:
+          type: string
+          enum:
+            - pending
+            - active
+            - draining
+      required:
+        - at
+        - agentId
+        - gen
+        - package
+        - status
+    HistoryResult:
+      description: Which package ran when.
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryEntry"
+          description: The generations, newest first.
+      required:
+        - entries
+    InvokeRequest:
+      description: "The arguments of one call. Absent args call the function with no arguments at all."
+      type: object
+      properties:
+        args:
+          description: "The function's input: one parameter as itself, several as one record keyed by their names."
+        idempotencyKey:
+          type: string
+          description: "Names the call when given: requests under one key are one call while it runs and until its answer is delivered."
+    InvokeResponse:
+      type: object
+      properties:
+        result:
+          description: What the handler answered, as it is.
+        callId:
+          type: string
+          description: "The id of the call's request, under which its records are kept: the call's handle with the request's own part after one more colon."
+      required:
+        - result
+        - callId
+    InvokeStreamEvent:
+      description: "One event of a call that answers as a stream: `accepted` once a copy took the call, naming the id its traces are filed under; then a `record` as the copy makes each (with its `lines` under a view); then the call's `result`, or its `error`, which ends the stream."
+      type: object
+      properties:
+        accepted:
+          type: object
+          properties:
+            callId:
+              type: string
+              description: "The id of the call's request, under which its records are kept: the call's handle with the request's own part after one more colon."
+          required:
+            - callId
+        record:
+          $ref: "#/components/schemas/TraceRecord"
+        lines:
+          type: array
+          items:
+            type: string
+        result:
+          description: What the function answered, as it is.
+        error:
+          $ref: "#/components/schemas/ErrorEnvelope"
+    LandRequest:
+      description: "Packages to land into the fleet as their own rows, with the packages they need: ones the plane already holds, by their digests, or ones the registry serves, by their references; one target, or a list landed as one landing (one closure, one admission, one ship, so every carrier rolls once)."
+      type: object
+      properties:
+        target:
+          type: string
+          description: "A sha256 digest of a package the plane holds, or a registry reference: an agent id alone or with @ and a version or range (acme/greeter, acme/greeter@^1.2.0). One target, or the list."
+        targets:
+          type: array
+          items:
+            type: string
+          description: "Several targets, each a digest or a registry reference, landed as one landing. One target, or the list."
+        noDeps:
+          type: boolean
+          description: Land what was given even when a dependency cannot be resolved from the registry.
+        installed:
+          type: boolean
+          description: "The packages are a third party's, from their files or the registry: their rows carry the package mark, and the author's own agents refuse them. Absent, the packages are the author's own from the author's tree; a package a reference names is a third party's whatever it says."
+    LandedPackage:
+      description: One package the landing landed.
+      type: object
+      properties:
+        agentId:
+          type: string
+        version:
+          type: string
+        digest:
+          type: string
+        neededBy:
+          type: string
+      required:
+        - agentId
+        - version
+        - digest
+    LandResult:
+      description: "What the landing left behind: the given package, the ones the registry supplied, and the warnings."
+      type: object
+      properties:
+        landed:
+          type: array
+          items:
+            $ref: "#/components/schemas/LandedPackage"
+        resolved:
+          type: array
+          items:
+            $ref: "#/components/schemas/LandedPackage"
+        warnings:
+          type: array
+          items:
+            type: string
+      required:
+        - landed
+        - resolved
+        - warnings
+    LogRecord:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: log
+        level:
+          type: string
+          enum:
+            - debug
+            - info
+            - warn
+            - error
+        message:
+          type: string
+        agentId:
+          type: string
+        callId:
+          type: string
+        attemptId:
+          type: string
+          description: The attempt of the call the record belongs to, when the record is the attempt's own.
+        run:
+          type: string
+          description: "The run that made the record, `<grant>.<count>`: runs order by their grant, then their count, as numbers."
+        place:
+          type: number
+          description: "The record's place in its run: inside one run the records order by it."
+        seq:
+          type: number
+        at:
+          type: string
+      required:
+        - kind
+        - level
+        - message
+        - agentId
+        - callId
+        - seq
+        - at
+    OpenApiDocument:
+      description: An OpenAPI 3.1 document, as JSON.
+      type: object
+      additionalProperties: true
+    PackageExists:
+      type: object
+      properties:
+        exists:
+          type: boolean
+      required:
+        - exists
+    PackageStored:
+      type: object
+      properties:
+        stored:
+          type: string
+          description: The digest, as given.
+      required:
+        - stored
+    CompileRequest:
+      description: "One compile inside the plane's compiler: the uploaded workspace files (agents-root relative, base64), the targets, the switches. The plane owns everything else: sessions, judgments, gates, packages, the ship."
+      type: object
+      properties:
+        protocol:
+          type: number
+          description: The wire protocol major, 0.
+        op:
+          type: string
+          const: compile.run
+        compileId:
+          type: string
+        targets:
+          type: array
+          items:
+            type: string
+        files:
+          type: object
+          additionalProperties:
+            type: string
+          description: Agents-root-relative path to base64 content.
+        coder:
+          type: string
+          enum:
+            - claude-code
+            - codex
+        runtimeHarness:
+          type: string
+          enum:
+            - claude-code
+            - codex
+            - openai
+        verify:
+          type: boolean
+          description: "Run the live tester on the plane after the compile; it means something on a deploy, since a verified package needs a live run and a compile alone never verifies."
+        newContract:
+          type: boolean
+          description: "Skip the compatibility judgment and the anchor: the session writes a new contract from the specification, and the dependents whose pinned contract breaks recompile in the same run."
+        cascade:
+          type: boolean
+        recompile:
+          type: boolean
+          description: Ignore the compile cache for every agent of this compile.
+        planOnly:
+          type: boolean
+          description: "Stop after the change step of every target and answer the plans: nothing is written, verified or shipped."
+        maxLiveCycles:
+          type: number
+          description: Fix rounds a failing test run may take; zero fails fast.
+        contracts:
+          type: object
+          additionalProperties:
+            type: string
+          description: "A given contract per agent id, as declaration text: preserved as it is, no judgment asked, a session that drifts from it fails."
+        seeds:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              files:
+                type: object
+                additionalProperties:
+                  type: string
+              coder:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  cli:
+                    type: string
+                  model:
+                    type: string
+                  effort:
+                    type: string
+                required:
+                  - name
+            required:
+              - files
+          description: "Reviewed coder sources per target agent (workspace `src/` relative path to base64 content), written as if a session wrote them: no session opens for a seeded agent, its tests are off and the cache is skipped, and a gate failure fails it with the gate's words. `coder` names the vendor that wrote the source, carried into the artifact's provenance. Every seeded agent's artifact is packed into the plane store and named in its report, modules included, its layer linking the platform libraries at the release's shared location; a seeded agent is never answered as a fleet row."
+        packages:
+          type: object
+          additionalProperties:
+            type: string
+          description: "The workspace's own package per agent id: the sha256 digest of the .cern file beside its spec, already in the plane store."
+      required:
+        - protocol
+        - op
+        - compileId
+        - targets
+        - files
+    PlaneCompileResponse:
+      description: "What a plane compile answers: the report, the shippable rows (modules ride inside their consumers and never appear), and the workspace write-backs (path to base64) the client writes beside its specs."
+      type: object
+      properties:
+        protocol:
+          type: number
+        status:
+          type: string
+          enum:
+            - ok
+            - spec-gate-failure
+            - compile-failure
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompileIssue"
+        agents:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompileAgentReport"
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/FleetAgentRowWire"
+        shipped:
+          $ref: "#/components/schemas/Shipped"
+      required:
+        - protocol
+        - status
+        - issues
+        - agents
+        - rows
+    Shipped:
+      description: "What the plane's own ship of the rows did on a deploy: where they landed, who shipped, whether every one runs a newer active generation, and the plane's notes while it waited."
+      type: object
+      properties:
+        agents:
+          type: array
+          items:
+            type: string
+          description: The agent ids shipped.
+        converged:
+          type: boolean
+          description: Whether every shipped agent runs a newer active generation.
+        notes:
+          type: array
+          items:
+            type: string
+          description: The plane's own words while it waited.
+      required:
+        - agents
+        - converged
+        - notes
+    FleetAgentRowWire:
+      type: object
+      properties:
+        agentId:
+          type: string
+        artifact:
+          type: string
+        handlers:
+          type: array
+          items:
+            type: string
+        uses:
+          type: array
+          items:
+            type: string
+        type:
+          type: string
+          enum:
+            - service
+            - task
+            - job
+            - worker
+            - module
+            - interface
+        links:
+          type: array
+          items:
+            type: string
+        contract:
+          type: string
+        implements:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              contractSha:
+                type: string
+            required:
+              - id
+              - contractSha
+        specSha:
+          type: string
+        usesContracts:
+          type: object
+          additionalProperties:
+            type: string
+        contractCompatibleWith:
+          type: array
+          items:
+            type: string
+        image:
+          type: string
+        base:
+          type: string
+        verified:
+          type: object
+          properties:
+            at:
+              type: string
+          required:
+            - at
+        package:
+          type: object
+          properties:
+            digest:
+              type: string
+            version:
+              type: string
+            publisher:
+              type: string
+          required:
+            - digest
+        built:
+          type: object
+          properties:
+            harness:
+              type: object
+              properties:
+                name:
+                  type: string
+                cli:
+                  type: string
+                model:
+                  type: string
+                effort:
+                  type: string
+              required:
+                - name
+            cernanto:
+              type: string
+            doctrine:
+              type: string
+            amendedFrom:
+              type: string
+            amendDepth:
+              type: number
+        testerArtifact:
+          type: string
+          description: Reusable tester artifact stored with this agent; it does not imply a tester deployment.
+        form:
+          type: string
+          enum:
+            - test
+            - tester
+          description: "A verification pair row's form: the package itself with the mocks its tests wrote linked in place of the mocked edges (test), or its tests as a task with one function run (tester)."
+        testOf:
+          type: string
+          description: "A tester row's target: the id its tests call."
+        owner:
+          type: string
+          description: "The handle of the compile call that shipped a verification pair row; the plane removes the pair when that compile is gone."
+      required:
+        - agentId
+        - artifact
+        - handlers
+        - uses
+    CallResponse:
+      description: "One call and one page of its records: what it is, the page's records in order, the calls it caused as calls, `next` when records remain after the page, and when `view=live` was asked the trace view's reading of the page's records."
+      type: object
+      properties:
+        call:
+          $ref: "#/components/schemas/CallSummary"
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/TraceRecord"
+          description: "The page: the call's records in order from `after`."
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/CallSummary"
+          description: "The calls this call caused, as calls, in the order they began."
+        next:
+          type: integer
+          description: "Present when records remain after this page: the position to ask the following page from, as `after`."
+        lines:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+          description: "Present under `view=live`: the lines of each record of the page as an agent's live stream shows it, in the records' order (an empty list for a record the view does not show)."
+      required:
+        - call
+        - records
+        - children
+    CallsResponse:
+      type: object
+      properties:
+        calls:
+          type: array
+          items:
+            $ref: "#/components/schemas/CallSummary"
+      required:
+        - calls
+    CallSummary:
+      type: object
+      properties:
+        callId:
+          type: string
+        agentId:
+          type: string
+        handler:
+          type: string
+        at:
+          type: string
+          description: When the call began, ISO.
+        durationMs:
+          type: number
+        status:
+          type: string
+          enum:
+            - ok
+            - error
+            - running
+        error:
+          type: string
+        parentCallId:
+          type: string
+        callerAgentId:
+          type: string
+      required:
+        - callId
+        - agentId
+        - handler
+        - at
+        - durationMs
+        - status
+    CallStreamEvent:
+      description: "One event of a call's stream: a call entered (`call`, with its `depth` in the walk, the root 0), a record of the call last entered (`record`, with its `lines` under a view), lines of the conversation that belong to no one record (`lines` alone: the frame and the closing), or the error that ended the stream (`error`)."
+      type: object
+      properties:
+        call:
+          $ref: "#/components/schemas/CallSummary"
+        depth:
+          type: integer
+          minimum: 0
+        record:
+          $ref: "#/components/schemas/TraceRecord"
+        lines:
+          type: array
+          items:
+            type: string
+        error:
+          type: string
+    SleepRecord:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: sleep
+        durationMs:
+          type: number
+        agentId:
+          type: string
+        callId:
+          type: string
+        attemptId:
+          type: string
+          description: The attempt of the call the record belongs to, when the record is the attempt's own.
+        run:
+          type: string
+          description: "The run that made the record, `<grant>.<count>`: runs order by their grant, then their count, as numbers."
+        place:
+          type: number
+          description: "The record's place in its run: inside one run the records order by it."
+        seq:
+          type: number
+        at:
+          type: string
+      required:
+        - kind
+        - durationMs
+        - agentId
+        - callId
+        - seq
+        - at
+    StepRecord:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: step
+        label:
+          type: string
+        error:
+          type: string
+        stack:
+          type: string
+        durationMs:
+          type: number
+        agentId:
+          type: string
+        callId:
+          type: string
+        attemptId:
+          type: string
+          description: The attempt of the call the record belongs to, when the record is the attempt's own.
+        run:
+          type: string
+          description: "The run that made the record, `<grant>.<count>`: runs order by their grant, then their count, as numbers."
+        place:
+          type: number
+          description: "The record's place in its run: inside one run the records order by it."
+        seq:
+          type: number
+        at:
+          type: string
+      required:
+        - kind
+        - label
+        - durationMs
+        - agentId
+        - callId
+        - seq
+        - at
+    TokenCreateBody:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+      required:
+        - name
+    TokenCreated:
+      description: Auth's answer, as auth gave it.
+      allOf:
+        - $ref: "#/components/schemas/TokenCreateResult"
+    TokenCreateResult:
+      description: A minted token, answered once in plaintext.
+      type: object
+      properties:
+        name:
+          type: string
+          description: The token's name.
+        token:
+          type: string
+          description: The token's value; the document keeps only its hash.
+        createdAt:
+          type: string
+          description: When it was minted.
+      required:
+        - name
+        - token
+        - createdAt
+    TokenRevokeResult:
+      description: A revoked token.
+      type: object
+      properties:
+        revoked:
+          type: string
+          description: The token's name.
+        revokedAt:
+          type: string
+          description: When it was revoked.
+      required:
+        - revoked
+        - revokedAt
+    TokensResult:
+      description: The plane's tokens.
+      type: object
+      properties:
+        tokens:
+          type: array
+          items:
+            $ref: "#/components/schemas/TokenSummary"
+          description: One row per token, hashes never included.
+      required:
+        - tokens
+    TokenSummary:
+      description: One token, as the operator sees it.
+      type: object
+      properties:
+        name:
+          type: string
+          description: The token's name.
+        createdAt:
+          type: string
+          description: When it was minted.
+        lastUsedAt:
+          type: string
+          description: When it last authenticated.
+        revokedAt:
+          type: string
+          description: When it was revoked.
+      required:
+        - name
+        - createdAt
+    LsFunction:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+    LsResult:
+      type: object
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: "#/components/schemas/LsRow"
+        metrics:
+          type: boolean
+        sampledAt:
+          type: string
+        usageSince:
+          type: string
+        notices:
+          type: array
+          items:
+            type: string
+        callsComplete:
+          type: boolean
+          description: Every unfinished call had caller metadata available at this sample.
+      required:
+        - agents
+        - metrics
+        - sampledAt
+        - usageSince
+        - notices
+        - callsComplete
+    LsRow:
+      type: object
+      properties:
+        agentId:
+          type: string
+        type:
+          type: string
+          enum:
+            - task
+            - job
+            - service
+            - worker
+            - module
+            - interface
+        status:
+          type: string
+        copies:
+          type: number
+        ready:
+          type: string
+        restarts:
+          type: number
+        cpuMillicores:
+          type: number
+        memoryMi:
+          type: number
+        journalEntries:
+          type: number
+        snapshotMi:
+          type: number
+          description: "The parked image the plane holds of the agent, what a restart loads, in exact mebibytes (the bytes over 1048576), summed over its generation copies; absent when the plane holds none or the holdings could not be read."
+        journalMi:
+          type: number
+          description: "What the plane journaled for the agent since its image, what a restart replays, in exact mebibytes; absent when the holdings could not be read."
+        incomingTotal:
+          type: number
+          description: Observed logical incoming starts since totalsSince, independent of trace retention. Replay is deduplicated.
+        outgoingTotal:
+          type: number
+          description: Observed child call starts since totalsSince. New job attempts can create new child calls.
+        incomingActive:
+          type: number
+          description: "The calls made of the agent that it holds now and has not answered, summed over the copies that answered when the listing asked them. For a module, the calls into it in flight inside the copies it is linked into; for an interface, the sum over its implementors' rows."
+        outgoingActive:
+          type: number
+          description: "The calls the agent's code made and still waits on, summed the same way."
+        copiesAsked:
+          type: number
+          description: "How many running copies the listing asked for the agent's active calls: its own copies; for a module, the copies it is linked into; for an interface, the sum over its implementors' rows."
+        copiesAnswered:
+          type: number
+          description: "How many of them answered in time. Fewer than copiesAsked leaves the two sums partial; none of some leaves them unknown."
+        totalsSince:
+          type: string
+        inputTokens:
+          type: number
+        outputTokens:
+          type: number
+        costUsd:
+          type: number
+          description: Provider-reported USD during the usage window, attributed once to the work owner. Omitted when any turn has no price.
+        functions:
+          type: array
+          items:
+            $ref: "#/components/schemas/LsFunction"
+      required:
+        - agentId
+        - type
+        - status
+        - copies
+        - ready
+        - restarts
+    LiveRecord:
+      description: "One record of an agent's live stream with the lines the trace view reads it as (an empty list for a record the view does not show)."
+      type: object
+      properties:
+        record:
+          $ref: "#/components/schemas/TraceRecord"
+        lines:
+          type: array
+          items:
+            type: string
+      required:
+        - record
+        - lines
+    TraceRecord:
+      description: One trace record of any kind.
+      anyOf:
+        - $ref: "#/components/schemas/HandlerRecord"
+        - $ref: "#/components/schemas/AgentCallRecord"
+        - $ref: "#/components/schemas/StepRecord"
+        - $ref: "#/components/schemas/SleepRecord"
+        - $ref: "#/components/schemas/BeginRecord"
+        - $ref: "#/components/schemas/LogRecord"

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+pnpm-lock.yaml
+
+# The platform's agent trees, whole: the specs are prose for the coder,
+# never reflowed (a reflow drops the spaces beside inline code at line
+# ends), the granted files beside them are data the agent reads
+# verbatim, and the packages are certified bytes.
+cernanto/
+
+# The cli's gateway client is generated from the gateway's OpenAPI document
+# (cli/scripts/regen-gateway.mjs); a restyle would fail the regeneration check.
+cli/src/gateway/

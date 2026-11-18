@@ -1,0 +1,13 @@
+{
+  "messageId": "<rota-w40@acmeledgers.example>",
+  "from": {
+    "address": "rami.ben-ari@acmeledgers.example",
+    "name": "Rami Ben-Ari"
+  },
+  "to": ["office@acmeledgers.example"],
+  "cc": ["noa.levi@acmeledgers.example", "omar.haddad@acmeledgers.example"],
+  "subject": "Support rota next week",
+  "text": "Next week: Noa on the line Monday to Wednesday, Omar Thursday and Friday. Escalations to me as usual.\n\nRami",
+  "receivedAt": "2026-09-26T11:00:00Z",
+  "attachments": []
+}

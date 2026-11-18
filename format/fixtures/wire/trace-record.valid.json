@@ -1,0 +1,12 @@
+{
+  "kind": "agent-call",
+  "agentId": "payments/payment-retry",
+  "callId": "call-1",
+  "seq": 2,
+  "at": "2026-01-01T00:00:00Z",
+  "target": "platform/ai",
+  "handler": "aiCondition",
+  "args": { "prompt": "Does the customer have successful payment history?" },
+  "result": { "value": true, "usage": { "units": 240 }, "costUsd": 0.5 },
+  "durationMs": 1200
+}

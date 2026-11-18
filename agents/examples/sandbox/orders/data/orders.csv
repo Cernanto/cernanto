@@ -1,0 +1,13 @@
+order_id,customer_name,customer_email,placed_at,delivered_at,status,items,total,currency,payment_id,payment_status,chat_handle
+A-1001,Lena Fischer,lena.fischer@example.com,2026-07-02,2026-07-06,delivered,Ledger notebook x2;Fountain pen x1,74.00,EUR,pay_9001,paid,lena
+A-1002,Tomas Lind,tomas.lind@example.se,2026-07-19,2026-07-24,delivered,Desk pad (green) x1,29.00,EUR,pay_9002,paid,tomas
+A-1003,Lena Fischer,lena.fischer@example.com,2026-08-11,2026-08-14,delivered,Ledger notebook x10,290.00,EUR,pay_9003,paid,lena
+A-1004,Maren Vogt,maren.vogt@example.de,2026-08-20,2026-08-25,delivered,Fountain pen x1;Ink bottle x2,63.00,EUR,pay_9004,paid,maren
+A-1005,Piet de Vries,piet.devries@example.nl,2026-09-01,2026-09-04,delivered,Desk pad (grey) x2,58.00,EUR,pay_9005,paid,piet
+A-1006,Sofia Rossi,sofia.rossi@example.it,2026-09-08,,exception,Ledger notebook x3,87.00,EUR,pay_9006,failed,sofia
+A-1007,Grace Mueller,grace.mueller@example.net,2026-09-18,2026-09-22,delivered,Desk pad (blue) x1,29.00,EUR,pay_9007,paid,grace
+A-1008,Jonas Berg,jonas.berg@example.org,2026-09-19,2026-09-23,delivered,Fountain pen x2,84.00,EUR,pay_9008,paid,jonas
+A-1009,Aino Korhonen,aino.korhonen@example.fi,2026-09-21,,shipped,Ink bottle x6,66.00,EUR,pay_9009,paid,aino
+A-1010,Erik Hansen,erik.hansen@example.dk,2026-09-22,,exception,Ledger notebook x1;Desk pad (green) x1,58.00,EUR,pay_9010,failed,erik
+A-1011,Maren Vogt,maren.vogt@example.de,2026-09-24,,shipped,Ledger notebook x4,116.00,EUR,pay_9011,paid,maren
+A-1012,Jonas Berg,jonas.berg@example.org,2026-09-23,2026-09-25,delivered,Ledger notebook x3,87.00,EUR,pay_9012,paid,jonas

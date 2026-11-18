@@ -1,0 +1,13 @@
+{
+  "messageId": "<lead-2209@nordicventures.example>",
+  "from": {
+    "address": "maria.holm@nordicventures.example",
+    "name": "Maria Holm"
+  },
+  "to": ["office@acmeledgers.example"],
+  "cc": [],
+  "subject": "Interested in Acme Ledgers for a 40-person team",
+  "text": "Hello,\n\nWe are a venture studio in Stockholm with about forty people across four companies. We are looking for a ledger and storefront setup we can run ourselves. Could someone walk us through it next week?\n\nMaria Holm\nNordic Ventures",
+  "receivedAt": "2026-09-26T09:30:00Z",
+  "attachments": []
+}

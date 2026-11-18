@@ -1,0 +1,69 @@
+Cernanto is licensed by folder.
+
+  cli/, format/, agents/,                 Apache License, Version 2.0
+  and the files at the repository         (the LICENSE file in each folder)
+  root
+
+  cernanto/gateway/openapi.yaml           Apache License, Version 2.0
+                                          (stated in the file's own
+                                          SPDX-License-Identifier line)
+
+  README.md, docs/                        Apache License, Version 2.0
+
+  runtime/lib, runtime/process,           Business Source License 1.1
+  cernanto/                               (the LICENSE file in each folder,
+                                          with the Additional Use Grant, the
+                                          Cernanto Output Exception and the
+                                          Change Date; Apache License,
+                                          Version 2.0 as the Change License)
+
+A file that states its own license in an SPDX-License-Identifier line is
+governed by that license. Every other folder and file of this repository is
+proprietary to Cernanto: no license, express or implied, is granted to it,
+and copying, modification, distribution or use is prohibited without prior
+written permission from Cernanto.
+
+The BSL Additional Use Grant permits production use except offering the
+Licensed Work to third parties on a hosted or embedded basis as a competitive
+offering. A competitive offering is a paid Product that significantly overlaps
+the agent or workflow platform capabilities defined in the grant. A paid basis
+includes the Product provider's charges for required infrastructure or usage,
+or support covering the Product, whether charged separately or as part of a
+broader offering. Products include hosted or managed services, including in
+customer-supplied environments, and software customers operate themselves.
+Embedded use includes requiring the Licensed Work to be accessed or downloaded
+for a Product to operate.
+
+Internal use, including use within affiliates under common control, is
+expressly permitted. Assisting a customer with its own permitted use does not,
+by itself, make a competitive offering; a Product offered with those services
+is still assessed under the grant. Using the engine as an internal application
+component does not, by itself, make the application competitive. The comparison
+concerns the platform capabilities offered to customers, including within a
+larger Product.
+
+Products not provided on a paid basis are not competitive. A Product that was
+not competitive when first made generally available does not become competitive
+later merely because Cernanto adds capabilities. The standard BSL rights to
+copy, modify, redistribute and make non-production use remain unchanged. This
+is a summary; each folder's LICENSE file contains the governing terms.
+
+Separately licensed components, including any enterprise components, remain
+governed by their own terms and are outside the BSL grant. The Cernanto Output
+Exception protects customer application outputs; it does not relicense the
+compiler, runtime or platform implementations distributed with them.
+
+Cernanto's compiler and runtime are the subject of a pending patent
+application. The Apache-licensed components carry the patent license in
+section 3 of Apache License, Version 2.0.
+
+For the BSL-licensed components, Cernanto will not assert any patent it owns
+or controls against use of the Licensed Work permitted by the applicable
+License and Additional Use Grant. This includes using the Licensed Work to
+compile, deploy and run customer agents and generated application outputs.
+The commitment does not extend to patent claims infringed independently of
+that permitted use, and does not prevent defense against a party that first
+brings a patent claim against Cernanto. Nothing in this statement narrows the
+Apache patent license.
+
+Copyright (c) 2026 Cernanto.

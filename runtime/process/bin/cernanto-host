@@ -1,0 +1,42 @@
+#!/bin/sh
+# Copyright (c) 2026 Cernanto. All rights reserved.
+# SPDX-License-Identifier: BUSL-1.1
+#
+# The host job under the highest release installed: the release's
+# block run with the host job's id, as the unit's ExecStart, and the
+# host's stop word, as the unit's ExecStop. It takes these two forms and
+# no other: a use that is neither is answered with them.
+#
+#   cernanto-host                        runs cernanto/host under the highest release
+#   cernanto-host --stop [--grace <ms>]  says the host's stop word
+#   cernanto-host --help                 says these forms
+set -eu
+USAGE='cernanto-host [--stop [--grace <ms>]]'
+case "${1:-}" in
+  -h | --help)
+    cat <<'HELP'
+cernanto-host: the host of a plane on this server, run under the highest release installed
+
+  cernanto-host                        runs the host (the unit's ExecStart)
+  cernanto-host --stop [--grace <ms>]  says the host's stop word (the unit's ExecStop)
+
+The releases are the folders under /opt/cernanto/releases; cernanto-release names the one chosen.
+HELP
+    exit 0
+    ;;
+  '' | --stop) ;;
+  *)
+    echo "usage: $USAGE" >&2
+    exit 2
+    ;;
+esac
+RELEASE="$("$(dirname "$0")/cernanto-release")"
+# The release's own Node, which a server's install lays into the release
+# folder; the machine's for a release that names none.
+NODE="$RELEASE/bin/node"
+[ -x "$NODE" ] || NODE="$(command -v node || true)"
+[ -n "$NODE" ] || { echo "cernanto-host: $RELEASE carries no node and the machine has none on its path" >&2; exit 1; }
+case "${1:-}" in
+  --stop) exec "$NODE" "$RELEASE/runtime/process/dist/agent/bin.js" "$@" ;;
+  *) exec "$NODE" "$RELEASE/runtime/process/dist/agent/bin.js" cernanto/host ;;
+esac

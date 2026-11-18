@@ -1,0 +1,44 @@
+/** A job's own of Node: the facts of the machine it runs on, and the processes it runs, on every system alike. Read a fact here and ask after a process here, never through a command; a command is for what Node has no call for. */
+declare module 'node:os' {
+  interface NetworkAddress {
+    address: string;
+    netmask: string;
+    family: 'IPv4' | 'IPv6';
+    mac: string;
+    internal: boolean;
+    cidr: string | null;
+  }
+  /** The system's name as Node tells it: `darwin`, `linux`, `win32`. */
+  export function platform(): string;
+  /** The processor architecture: `arm64`, `x64`. */
+  export function arch(): string;
+  /** The system's release, one line of text. */
+  export function release(): string;
+  /** How many processors a program may use here. */
+  export function availableParallelism(): number;
+  /** The machine's memory in bytes, all of it and what is free now. */
+  export function totalmem(): number;
+  export function freemem(): number;
+  /** The machine's name. */
+  export function hostname(): string;
+  /** The seconds since the system started. */
+  export function uptime(): number;
+  /** The network interfaces by name, each with its addresses. */
+  export function networkInterfaces(): Record<string, NetworkAddress[] | undefined>;
+  /** The user this process runs as: `uid` and `gid` are numbers on POSIX (0 is root) and -1 on Windows. */
+  export function userInfo(): { uid: number; gid: number; username: string };
+}
+/** Of the process, a job has its own id and the call that asks after another process and ends it. Nothing else of `process` is a job's: what a process knows of itself is read in its folder's mark. (Declared the way @types/node declares it, so a workspace that also sees that package merges cleanly.) */
+declare namespace NodeJS {
+  interface Process {
+    /** This process's id. */
+    readonly pid: number;
+    /**
+     * Sends a signal to a process by its id. Signal `0` sends nothing and asks whether the process is there: the call
+     * returns when it is and throws when it is not (the error's `code` is `ESRCH`; `EPERM` says it is there and another user's).
+     * `'SIGTERM'` asks a process to end and `'SIGKILL'` ends it; Windows has no signals and ends the process at once on either.
+     */
+    kill(pid: number, signal?: string | number): true;
+  }
+}
+declare var process: NodeJS.Process;
