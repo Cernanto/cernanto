@@ -1,7 +1,5 @@
 # cernanto/decision/llm
 
-Type: task
-
 Implements: cernanto/decision
 Uses: cernanto/llm-prompt, cernanto/config, file:prompts/
 

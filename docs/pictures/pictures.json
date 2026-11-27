@@ -1,0 +1,108 @@
+{
+  "taken": {
+    "ui": [
+      {
+        "file": "css/style-D6q0XIHI.css",
+        "sha256": "989980c7cbf841487b5e20fb8e518427e030220b3305462e35fd78eb19a1a556"
+      },
+      {
+        "file": "index.html",
+        "sha256": "2679707d310aa4d5663d8e0c7ffa854264739cc3160205ad631a1de7bbc08c48"
+      },
+      {
+        "file": "js/code-editor-DzNaSHmJ.js",
+        "sha256": "f449f1c80b06d560d279c92cc94368e71f15c05161663c2131730c9e4a92a031"
+      },
+      {
+        "file": "js/dist-Dr-7RBH3.js",
+        "sha256": "ee7c2be72c2a8b3c6a9e2e506c7bcc5e001b578cf7fc0a976f2618c296040ff7"
+      },
+      {
+        "file": "js/index-CSsVJTXT.js",
+        "sha256": "f7f17df92d8d1b641a61de24905e5a3cca3b93c06f6028c5db6e75d8da17b2b6"
+      },
+      {
+        "file": "js/jsx-runtime-DyZJNswf.js",
+        "sha256": "006c8c36904a2f42ac8e86d3e56badc6473450e8a3988d87f12c632a6487218b"
+      },
+      {
+        "file": "js/label-lines-C1XSuwyY.js",
+        "sha256": "35f746ee59263ab09a40e76bcce46e956ec51bd5c1a175d08eda689b06f1342e"
+      },
+      {
+        "file": "js/prose-editor-BjiH7Zcz.js",
+        "sha256": "87736f946391204fc33ab600d8e365792ffd25561e0699392c6b9ef115f27ed9"
+      },
+      {
+        "file": "js/theme.js",
+        "sha256": "88eab9f90db616d900032cf6a4a7b3c849d23e2dd49a7b578cd1b45c51a730d2"
+      }
+    ]
+  },
+  "pictures": {
+    "cernanto-ui-first-reply-dark.webp": {
+      "shows": "first-reply",
+      "look": "dark",
+      "width": 1448,
+      "height": 1024,
+      "density": 2,
+      "at": "/#/agents/examples/basics/counter"
+    },
+    "cernanto-ui-first-reply-light.webp": {
+      "shows": "first-reply",
+      "look": "light",
+      "width": 1448,
+      "height": 1024,
+      "density": 2,
+      "at": "/#/agents/examples/basics/counter"
+    },
+    "cernanto-ui-first-steps-dark.webp": {
+      "shows": "first-steps",
+      "look": "dark",
+      "width": 2200,
+      "height": 1440,
+      "density": 2,
+      "at": "/#/agents"
+    },
+    "cernanto-ui-first-steps-light.webp": {
+      "shows": "first-steps",
+      "look": "light",
+      "width": 2200,
+      "height": 1440,
+      "density": 2,
+      "at": "/#/agents"
+    },
+    "cernanto-ui-new-agent-dark.webp": {
+      "shows": "new-agent",
+      "look": "dark",
+      "width": 2200,
+      "height": 1440,
+      "density": 2,
+      "at": "/#/agents/ops/reminder"
+    },
+    "cernanto-ui-new-agent-light.webp": {
+      "shows": "new-agent",
+      "look": "light",
+      "width": 2200,
+      "height": 1440,
+      "density": 2,
+      "at": "/#/agents/ops/reminder"
+    },
+    "cernanto-ui-source-dark.webp": {
+      "shows": "source",
+      "look": "dark",
+      "width": 2200,
+      "height": 1440,
+      "density": 2,
+      "at": "/#/agents/examples/workflows/helpdesk?tab=source"
+    },
+    "cernanto-ui-source-light.webp": {
+      "shows": "source",
+      "look": "light",
+      "width": 2200,
+      "height": 1440,
+      "density": 2,
+      "at": "/#/agents/examples/workflows/helpdesk?tab=source"
+    }
+  }
+}

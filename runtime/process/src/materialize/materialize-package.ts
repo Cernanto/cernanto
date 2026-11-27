@@ -37,19 +37,26 @@ import {
 import type { WireParameters, WireShapes } from './declarations.js';
 import type { DeclaredSurface } from './declarations.js';
 import {
+  LINKED_FUNCTIONS_FILE,
+  answersCalls,
   assetsModule,
   bindModule,
   composedPackageNameOf,
   entryModule,
+  linkedFunctionsModule,
+  linkedHolderFile,
+  linkedHolderModule,
   linkedStubModule,
   linkedTableModule,
   osModule,
   refuseStubCollisions,
+  standaloneEntryModule,
   stubFileName,
   suiteRunnerModule,
   testerTaskEntryModule,
   wireStubModule,
 } from './glue.js';
+import type { LinkedSurface } from './glue.js';
 import { installClosure } from './install.js';
 import {
   isLocalMcpServer,
@@ -141,16 +148,22 @@ export interface MaterializePackageInput {
    * (composedModuleDir): it runs on the carrier's runtime and gets no
    * links of its own. */
   composed?: boolean | undefined;
-  /** The form: the package itself (absent) or its tester, the tests it
+  /** The form: the package itself (absent); its tester, the tests it
    * carries as a task with one function `run`, derived from the same
-   * bytes. */
-  form?: 'tester' | undefined;
+   * bytes; or, for a module, its standalone agent, a service with no
+   * function of its own that links the module and answers its
+   * functions. */
+  form?: 'tester' | 'standalone' | undefined;
   /** For the tester: the id the tests call, the target's test form
    * served apart, or, for a module target, the id the tester links the
    * module under (the module's test-form row, composed into the tester
    * under that id). Absent, the tests call the package's own id, and a
    * module target is linked under its own. */
   testOf?: string | undefined;
+  /** For the standalone form: the id the fleet names the module by,
+   * which the standalone agent links it under and is named after.
+   * Absent, the name the package itself carries. */
+  target?: string | undefined;
   dependency: DependencyResolver;
   /** The seam's agent the glue names: the custody agent a lane module
    * asks for its credentials. */
@@ -168,6 +181,20 @@ export interface MaterializedPackage {
   agentId: string;
   type: AgentType;
   packageDigest: string;
+  /** The functions the package lists as its calls, for the package
+   * materialized as itself; a form derived from it states none. */
+  handlers?: readonly string[] | undefined;
+}
+
+/** A placed module whose functions its carrier answers: the id it is
+ * placed under, the digest the composition names its package by (the
+ * one the plane's record of the module carries, which a call from
+ * outside is made against) and its calls, as its own package lists
+ * them. */
+export interface AnsweredModule {
+  id: string;
+  digest: string;
+  handlers: readonly string[];
 }
 
 /** A materialized tester: the task's id is the target's with the
@@ -186,6 +213,20 @@ export const TESTER_SUFFIX = '-tester';
 /** The tester's id for an agent: the agent's id with the suffix. */
 export function testerIdOf(agentId: string): string {
   return `${agentId}${TESTER_SUFFIX}`;
+}
+
+/** The suffix the id of a module's standalone agent carries after the
+ * module's id. */
+export const STANDALONE_SUFFIX = '-standalone';
+
+/** The id of a module's standalone agent: the module's id with the
+ * suffix.
+ * @param moduleId - The module's id.
+ * @returns The standalone agent's id.
+ * @example standaloneIdOf('billing/price-book'); // 'billing/price-book-standalone'
+ */
+export function standaloneIdOf(moduleId: string): string {
+  return `${moduleId}${STANDALONE_SUFFIX}`;
 }
 
 /** A mocked contract's declared surface: read off its contract when
@@ -431,6 +472,11 @@ async function writeGlue(
     // The table of the modules composed here: empty until the
     // generation's modules are placed and the composition finished.
     writeText(join(dist, 'linked.js'), linkedTableModule([]));
+    // The linked functions the entry answers beside the agent's own:
+    // none until then.
+    if (answersCalls(manifest.type)) {
+      writeText(join(dist, LINKED_FUNCTIONS_FILE), linkedFunctionsModule([]));
+    }
   }
   if (manifest.files.length > 0) writeText(join(dist, 'assets.js'), assetsModule(manifest.files));
   // What the safe's contract declares, read once: where a grant placed
@@ -564,6 +610,7 @@ async function writeTesterGlue(
   const os = osModule('task');
   if (os !== undefined) writeText(join(dist, 'os.js'), os);
   writeText(join(dist, 'main.js'), entryModule('task', ['run']));
+  writeText(join(dist, LINKED_FUNCTIONS_FILE), linkedFunctionsModule([]));
   writeText(join(dist, 'index.js'), testerTaskEntryModule());
   writeText(join(dist, 'suite.js'), suiteRunnerModule());
   const links: string[] = [];
@@ -625,6 +672,36 @@ async function writeTesterGlue(
   return { wiring, mocks: mocked, linkedAs };
 }
 
+/**
+ * Writes the glue of a module's standalone agent: the entry of a
+ * service with no function of its own, the table of the modules and the
+ * linked functions, both empty until the composition is finished.
+ * Nothing of the package's code is written: the module arrives by the
+ * composition, placed as it is in every agent that links it, under the
+ * id the fleet names it by, which is the id the standalone agent links
+ * it under. Answers the standalone agent's wiring.
+ */
+function writeStandaloneGlue(
+  pkg: ReadPackage,
+  dist: string,
+  moduleId: string,
+): Record<string, unknown> {
+  const { manifest } = pkg;
+  writeText(join(dist, 'main.js'), standaloneEntryModule());
+  writeText(join(dist, 'linked.js'), linkedTableModule([]));
+  writeText(join(dist, LINKED_FUNCTIONS_FILE), linkedFunctionsModule([]));
+  return {
+    agentId: standaloneIdOf(moduleId),
+    type: 'service',
+    uses: [moduleId],
+    links: [moduleId],
+    ...(manifest.contractHash === undefined
+      ? {}
+      : { usesContracts: { [moduleId]: manifest.contractHash } }),
+    entry: 'dist/main.js',
+  };
+}
+
 function wiringOf(
   pkg: ReadPackage,
   links: readonly string[],
@@ -668,10 +745,11 @@ function wiringOf(
 
 /**
  * Materializes one package into the directory given, replacing what
- * was there, in the form asked: the package itself, or its tester
- * (`form: 'tester'`), a task derived from the same bytes. Answers the
- * directory; a failure mid-way removes it, so a process boots from a
- * whole directory or from none.
+ * was there, in the form asked: the package itself, its tester
+ * (`form: 'tester'`), a task derived from the same bytes, or a
+ * module's standalone agent (`form: 'standalone'`), a service that
+ * links the module. Answers the directory; a failure mid-way removes
+ * it, so a process boots from a whole directory or from none.
  */
 export async function materializePackage(
   input: MaterializePackageInput & { form: 'tester' },
@@ -691,6 +769,15 @@ export async function materializePackage(
       `${manifest.name} is ${manifest.type === 'worker' ? 'a worker' : 'an interface'}: it has no tester`,
     );
   }
+  const standalone = input.form === 'standalone';
+  if (standalone && manifest.type !== 'module') {
+    throw new Error(
+      `${manifest.name} is ${manifest.type === 'interface' ? 'an' : 'a'} ${manifest.type}: a module alone is started by itself`,
+    );
+  }
+  // The module a standalone agent links: under the id the fleet names it
+  // by, which is the package's own name unless its row says another.
+  const moduleId = input.target ?? manifest.name;
   const dir = input.into;
   mkdirSync(dirname(dir), { recursive: true });
   await rm(dir, { recursive: true, force: true });
@@ -711,6 +798,18 @@ export async function materializePackage(
         packageName: composedPackageNameOf(testerIdOf(manifest.name)),
         npm: testsOf(pkg).npm,
         lock: pkg.testsLock,
+        closures: input.closures,
+        log,
+      });
+    } else if (standalone) {
+      wiring = writeStandaloneGlue(pkg, dist, moduleId);
+      // The standalone agent has no code and no npm closure of its own:
+      // the folder's package file alone.
+      await installClosure({
+        directory: staging,
+        packageName: composedPackageNameOf(standaloneIdOf(moduleId)),
+        npm: {},
+        lock: undefined,
         closures: input.closures,
         log,
       });
@@ -743,9 +842,24 @@ export async function materializePackage(
     throw error;
   }
   const where = `materialized from ${pkg.packageDigest.slice(0, 19)}... at ${relative(dirname(dir), dir)}`;
+  if (standalone) {
+    log(`${moduleId} by itself: ${where}`);
+    return {
+      dir,
+      agentId: standaloneIdOf(moduleId),
+      type: 'service',
+      packageDigest: pkg.packageDigest,
+    };
+  }
   if (!tester) {
     log(`${manifest.name}: ${where}`);
-    return { dir, agentId: manifest.name, type: manifest.type, packageDigest: pkg.packageDigest };
+    return {
+      dir,
+      agentId: manifest.name,
+      type: manifest.type,
+      packageDigest: pkg.packageDigest,
+      handlers: manifest.handlers,
+    };
   }
   const testOf = input.testOf;
   log(
@@ -806,13 +920,6 @@ export function composedModuleDir(carrierDir: string, agentId: string): string {
   return join(carrierDir, 'node_modules', composedPackageNameOf(agentId));
 }
 
-/**
- * Finishes a generation's composition once its modules are placed:
- * the table of the composed ids is written into the carrier's dist and
- * into each placed module's (a module binds an interface through its
- * own bind, which reads the table beside it). Nothing to finish
- * without modules: the empty table the materialize wrote stands.
- */
 /** The interfaces a materialized package implements, each with the
  * contract hash its compile stamped, read off the folder's wiring; none
  * when the wiring names none or cannot be read. */
@@ -831,7 +938,40 @@ export function stampsOf(dir: string): { id: string; contractSha: string }[] {
   });
 }
 
-export function finishComposition(carrierDir: string, moduleIds: readonly string[]): void {
+/** What a placed module's contract declares, read off the folder it was
+ * placed in; undefined for a module that carries none. */
+function placedSurfaceOf(carrierDir: string, moduleId: string): DeclaredSurface | undefined {
+  let contract: string;
+  try {
+    contract = readFileSync(join(composedModuleDir(carrierDir, moduleId), 'contract.d.ts'), 'utf8');
+  } catch {
+    return undefined;
+  }
+  return declaredSurfaceOf(contract);
+}
+
+/**
+ * Finishes a generation's composition once its modules are placed:
+ * the table of the composed ids is written into the carrier's dist and
+ * into each placed module's (a module binds an interface through its
+ * own bind, which reads the table beside it), and the carrier's linked
+ * functions are written whole, the functions each answered module's
+ * package lists, read against the contract the module was placed with,
+ * and beside them each such module's holder, where the carrier answers
+ * calls (its empty ones stand there). Nothing to finish without
+ * modules: the empty table and the empty linked functions the
+ * materialize wrote stand.
+ * @param carrierDir - The folder of the agent the modules are placed in.
+ * @param moduleIds - The modules placed.
+ * @param answered - The placed modules whose functions the carrier
+ *   answers, each with its calls; none where absent.
+ * @example finishComposition(ownDir, placed, [{ id: 'billing/price-book', digest, handlers: ['quote'] }]);
+ */
+export function finishComposition(
+  carrierDir: string,
+  moduleIds: readonly string[],
+  answered: readonly AnsweredModule[] = [],
+): void {
   if (moduleIds.length === 0) return;
   // What each placed module implements, as its own wiring says: a bind
   // answers in process only for an implementor of its interface.
@@ -843,4 +983,21 @@ export function finishComposition(carrierDir: string, moduleIds: readonly string
     const dist = join(composedModuleDir(carrierDir, id), 'dist');
     if (existsSync(dist)) writeText(join(dist, 'linked.js'), table);
   }
+  const functions = join(carrierDir, 'dist', LINKED_FUNCTIONS_FILE);
+  if (!existsSync(functions)) return;
+  const surfaces: LinkedSurface[] = [];
+  for (const id of moduleIds) {
+    const module = answered.find((one) => one.id === id);
+    if (module === undefined || module.handlers.length === 0) continue;
+    surfaces.push({
+      agentId: id,
+      digest: module.digest,
+      handlers: module.handlers,
+      // A module placed with no contract declares nothing: each of its
+      // functions takes the wire's value as it is.
+      surface: placedSurfaceOf(carrierDir, id) ?? { functions: [], constants: [] },
+    });
+    writeText(join(carrierDir, 'dist', linkedHolderFile(id)), linkedHolderModule(id));
+  }
+  writeText(functions, linkedFunctionsModule(surfaces));
 }

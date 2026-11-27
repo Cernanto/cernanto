@@ -1,5 +1,7 @@
 // Copyright (c) 2026 Cernanto.
 // SPDX-License-Identifier: Apache-2.0
+import { createHash } from 'node:crypto';
+
 import type { Command } from 'commander';
 
 import { answerOnScreen, watchAsks } from './asks.js';
@@ -11,6 +13,7 @@ import type { TraceRecord } from './gateway/types.gen.js';
 import { asRefusedCall, fail, interactive, outputOf } from './output.js';
 import type { OutputOptions } from './output.js';
 import { ServerClient, callOfRequest, recordKeyOf } from './server-client.js';
+import type { CallBeside } from './server-client.js';
 import { terminalIo } from './terminal.js';
 import type { ConnectIo } from './terminal.js';
 import type { Plane } from './gateway-client.js';
@@ -19,7 +22,10 @@ import type { Plane } from './gateway-client.js';
 // exported function, narrated as it runs on a terminal (what `trace
 // -f` shows), then its result. The arguments are `key=value` pairs
 // the httpie way (`name=Ada` a string, `count:=3` raw JSON), or one
-// whole document under `--args`.
+// whole document under `--args`. A module's function is called where
+// the module runs: inside the agent `--in` names, one of those that
+// link it, or with no `--in` in the module started by itself. The
+// plane judges both, and its refusal is printed as it is.
 
 /** One json document, as `--args` or a value gives it. */
 function jsonOf(text: string, what: string): unknown {
@@ -273,32 +279,78 @@ export function argsOf(
   });
 }
 
+/** What the arguments of a call are read against: the parameters of the
+ * function, and the contract they were read from, by its sha256 hex. */
+export interface ContractRead {
+  parameters?: ParameterReading[];
+  contractSha?: string;
+}
+
 /** The parameters of the function, read from the agent's recorded
- * contract through the gateway; undefined when the plane cannot say (the
- * agent is not deployed, or carries no contract), so the arguments are
- * read the plain way and the call itself answers. */
-export async function parametersOfCall(
+ * contract through the gateway, the function being one of those the
+ * plane lists for the agent, and the contract's sha256 hex, which the
+ * call then names: the plane refuses a call whose arguments were read
+ * against a contract the agent no longer fits. Nothing of either when
+ * the plane cannot say (the agent is not deployed, or carries no
+ * contract), so the arguments are read the plain way and the call
+ * itself answers. */
+export async function contractOfCall(
   client: Pick<ServerClient, 'describe'>,
   agentId: string,
   fn: string,
-): Promise<ParameterReading[] | undefined> {
+): Promise<ContractRead> {
   try {
     const described = await client.describe(agentId);
-    return described.contract === undefined
-      ? undefined
-      : functionParameters(described.contract, fn);
+    if (described.contract === undefined) return {};
+    const parameters = functionParameters(described.contract, fn, described.agent.handlers);
+    return {
+      ...(parameters === undefined ? {} : { parameters }),
+      contractSha: createHash('sha256').update(described.contract).digest('hex'),
+    };
   } catch {
-    return undefined;
+    return {};
   }
+}
+
+/** What a call names beside its arguments: for a module's function,
+ * the agent to run it inside; and the contract the arguments were read
+ * against. */
+function besideOf(input: CallBeside): CallBeside {
+  return {
+    ...(input.in === undefined ? {} : { in: input.in }),
+    ...(input.contractSha === undefined ? {} : { contractSha: input.contractSha }),
+  };
+}
+
+/** One call as the verb makes it. */
+type CallInput = { agentId: string; handler: string; args: unknown } & CallBeside;
+
+/** The line a call prints when it started the module by itself, as the
+ * plane said it did: the agent that now runs it, and how that ends.
+ * @param standaloneId - The module's standalone agent, as the plane named it.
+ * @returns The line, ended.
+ * @example startedAloneWords('billing/price-book-standalone');
+ */
+export function startedAloneWords(standaloneId: string): string {
+  return `started by itself as ${standaloneId}; it parks when idle, and this ends it: cernanto delete ${standaloneId}\n`;
 }
 
 export async function invokeAgent(
   client: Pick<ServerClient, 'invoke'>,
-  input: { agentId: string; handler: string; args: unknown },
+  input: CallInput,
   options: OutputOptions,
+  /** Where a word beside the answer goes: the answer alone is the output. */
+  said: (text: string) => void = (text) => {
+    process.stderr.write(text);
+  },
 ): Promise<string> {
   const result = await client
-    .invoke(input.agentId, input.handler, input.args)
+    .invoke(input.agentId, input.handler, input.args, {
+      ...besideOf(input),
+      onStarted: (standaloneId) => {
+        said(startedAloneWords(standaloneId));
+      },
+    })
     .catch((error: unknown) => {
       throw asRefusedCall(error, input.agentId, input.handler);
     });
@@ -340,7 +392,7 @@ export function answerText(result: unknown): string {
  */
 export async function invokeAgentWatched(
   client: Pick<ServerClient, 'invokeStream'>,
-  input: { agentId: string; handler: string; args: unknown },
+  input: CallInput,
   options: {
     details?: boolean;
     debug?: boolean;
@@ -409,6 +461,10 @@ export async function invokeAgentWatched(
         view: 'live',
         details: options.details === true,
         debug: options.debug === true,
+        ...besideOf(input),
+        onStarted: (standaloneId) => {
+          write(startedAloneWords(standaloneId));
+        },
         onAccepted: (callId) => {
           request = callId;
           followed.add(rootOf(callId));
@@ -438,6 +494,10 @@ export function registerInvoke(program: Command): void {
       '--args <json>',
       'the arguments as one json document: a record naming them, or a list of them in order',
     )
+    .option(
+      '--in <agent-id>',
+      "for a module's function: the agent to run it inside, one of those that link the module (none: the module by itself, which the call starts when it is not started)",
+    )
     .option('-o, --output <format>', 'compact or json')
     .option('-q, --quiet', 'print the result only, without the call as it goes')
     .option('-d, --details', 'expand the details of the call as it goes')
@@ -450,6 +510,7 @@ export function registerInvoke(program: Command): void {
         pairs: string[],
         options: {
           args?: string;
+          in?: string;
           output?: string;
           quiet?: boolean;
           details?: boolean;
@@ -460,29 +521,32 @@ export function registerInvoke(program: Command): void {
           agentId = resolveAgentSelector(agentId);
           const output = outputOf(options);
           const client = new ServerClient();
-          const args = argsOf(
-            pairs,
-            options.args,
-            await parametersOfCall(client, agentId, handler),
+          // A module's function is read against the module's own
+          // contract, wherever it runs; and the call names the contract
+          // it was read against, so the plane refuses it where the
+          // agent was deployed again meanwhile under another.
+          const read = await contractOfCall(client, agentId, handler);
+          const args = argsOf(pairs, options.args, read.parameters, handler);
+          const call = {
+            agentId,
             handler,
-          );
+            args,
+            ...(options.in === undefined ? {} : { in: resolveAgentSelector(options.in) }),
+            ...(read.contractSha === undefined ? {} : { contractSha: read.contractSha }),
+          };
           // The narrated form is for a person at a terminal; a pipe, -q,
           // or -o json gets the result alone.
           const narrate = options.quiet !== true && output.output !== 'json' && interactive();
           if (!narrate) {
-            process.stdout.write(await invokeAgent(client, { agentId, handler, args }, output));
+            process.stdout.write(await invokeAgent(client, call, output));
             return;
           }
-          const answer = await invokeAgentWatched(
-            client,
-            { agentId, handler, args },
-            {
-              ...(options.details === undefined ? {} : { details: options.details }),
-              ...(options.debug === undefined ? {} : { debug: options.debug }),
-              write: (text) => process.stdout.write(text),
-              asks: { plane: currentPlane(), io: terminalIo() },
-            },
-          );
+          const answer = await invokeAgentWatched(client, call, {
+            ...(options.details === undefined ? {} : { details: options.details }),
+            ...(options.debug === undefined ? {} : { debug: options.debug }),
+            write: (text) => process.stdout.write(text),
+            asks: { plane: currentPlane(), io: terminalIo() },
+          });
           // The reply message is the answer, in the conversation's own
           // words; when the stream told no reply record, the answer is
           // printed in the same form. The call was

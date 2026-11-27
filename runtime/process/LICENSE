@@ -8,11 +8,11 @@ Parameters
 Licensor:             Cernanto
 
 Licensed Work:        Cernanto: the language runtime (runtime/lib), the process
-                      package (runtime/process), the platform's agent
-                      specifications and compiled packages under cernanto/,
-                      the compiler's doctrine and prompt files, and their
-                      documentation, as distributed by the Licensor under
-                      this License.
+                      package (runtime/process), the web UI (ui/), the
+                      platform's agent specifications and compiled packages
+                      under cernanto/, the compiler's doctrine and prompt
+                      files, and their documentation, as distributed by the
+                      Licensor under this License.
 
                       Software and materials expressly distributed under
                       other license terms, including Apache-licensed

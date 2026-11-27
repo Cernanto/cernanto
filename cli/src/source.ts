@@ -32,7 +32,8 @@ import type { OutputOptions } from './output.js';
 type Package = Awaited<ReturnType<typeof packageOfTarget>>;
 
 /** The page of a package: its own text, or as json the text by its path
- * in the package, the form `code` and `tests` answer their files in. */
+ * in the package, the form `compiled` and `tests` answer their files
+ * in. */
 export function pageOf(pkg: Pick<Package, 'spec'>, options: OutputOptions): string {
   if (options.output === 'json') {
     return `${JSON.stringify({ files: { [PACKAGE_SPEC_PATH]: pkg.spec } }, null, 2)}\n`;

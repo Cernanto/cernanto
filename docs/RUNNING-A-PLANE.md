@@ -250,6 +250,21 @@ One check tells you the front is right. From outside,
 answers `401`, and the same request with the header `Authorization: Bearer
 <the operator token>` answers `200`.
 
+**The web UI.** Every server's gateway serves the plane's [web UI](UI.md) at
+the root of its address. The UI sends no token, so it works for a request made
+on the server itself: open a tunnel to a server's own address,
+`ssh -o ExitOnForwardFailure=yes -L 7435:127.0.0.1:7434 <server>`, then
+`http://127.0.0.1:7435/` in your browser. The tunnel takes a local port of its
+own, since 7434 is the port of a plane on your own machine, and with that
+option `ssh` stops when it cannot take the port: the screen you open is the
+server's and never your own plane's. The browser then stands at a loopback
+address, so the UI takes the plane for a local one: choose its kind under
+Settings, This plane. On a plane said to be staging or production a delete asks
+for the agent's id, and every button that acts carries the kind. Through your
+front a browser carries no token and meets one screen that says so, unless the
+front adds an operator token itself, which makes whoever reaches the front an
+operator.
+
 ## The host, on every server
 
 Nothing else is written for the host: it takes no argument and reads no
@@ -299,8 +314,8 @@ agent, the controller), and starts them; the controller places the gateway;
 once the gateway answers, the controller puts the release's packages onto the
 plane, with no compile. A cold start takes a minute or two. The host job writes no
 setting but two defaults a plane cannot start without choosing (the engine that
-answers a prompt and the one that decides, both the plane's coder until you
-bind others, below): the configuration holds what you set, and everything a
+answers a prompt and the one that decides, both the plane's coding assistant
+until you bind others, below): the configuration holds what you set, and everything a
 process knows of itself (its release, its machine, its store) it finds itself.
 Then:
 
@@ -320,12 +335,12 @@ cernanto call cernanto/controller nodes                   # the hosts and their 
 ```
 
 The plane is up when `cernanto ls` lists the platform's agents ready and the
-nodes answer shows every host live. Bind the plane's coder (below), and deploy
+nodes answer shows every host live. Bind the plane's coding assistant (below), and deploy
 your agents with `cernanto deploy` from their workspace.
 
 ## The engines and their keys
 
-A server has no machine login, so the plane's AI is bound and keyed by hand,
+A server has no machine login, so the plane's engines are bound and keyed by hand,
 each engine a setting under the agent that reads it: which implementor serves an
 interface is the interface's own setting, `<the interface id>/default`, and a key
 is a setting of its engine like any other. The
@@ -336,7 +351,7 @@ to read it or `name=value` to write it, and `name=null` removes it.
 ```sh
 cernanto config cernanto/harness/codex api-key=<api key>         # or cernanto/harness/claude-code
 cernanto config cernanto/harness/codex mode=api-key              # plan is a laptop's mode
-cernanto config cernanto/harness default=cernanto/harness/codex  # the coder: compiles, and every judgment by default
+cernanto config cernanto/harness default=cernanto/harness/codex  # the coding assistant: compiles, and every judgment by default
 
 cernanto config cernanto/llm-prompt/openai token=<api key>       # values and decisions on an OpenAI-compatible endpoint instead
 cernanto config cernanto/llm-prompt/openai endpoint=<chat-completions url>
@@ -352,7 +367,8 @@ cernanto config                                                  # every agent's
 
 The host job writes the prompt and decision defaults at a fresh plane's start,
 `cernanto/llm-prompt/harness` and `cernanto/decision/llm`, so a plane with a
-coder bound answers every judgment on it; the harness binding is yours to set.
+coding assistant bound answers every judgment on it. `cernanto/harness` is the
+setting's name for the coding assistant, and that binding is yours to set.
 A binding takes effect on the next call, with no restart, and a call of the
 interface by its id (`cernanto call cernanto/decision decideIf ...`) goes to its
 default.
@@ -375,6 +391,18 @@ and the cli looks for a plane on its own machine there.
 - **A long-lived service**: its journal is cut behind each image, so its replay
   at a restore is bounded. Without CRIU it replays its whole journal, correct and
   slower.
+- **The plane's own traces**: the plane's own agents, the ones its release
+  installs (the gateway, the controller, the trace agent and the rest), store
+  nothing of their calls unless you set them, so the store holds your agents'
+  traces and not the plane's. Their call totals in `cernanto ls` count all the same. To
+  read what one of them does, turn it on,
+  `cernanto traces cernanto/controller on`, and off again after: each change
+  starts that agent again as a new version, and what it stores is what it does
+  from then on. The compiler and the model agents (`cernanto/compile`,
+  `cernanto/llm` and the ones under `cernanto/decision/`) are on from the
+  start, since a deploy's progress and a judgment's model and cost are read
+  from their records. After an upgrade from a release before this, the plane's
+  own agents go off as the upgrade rolls them.
 
 ## Upgrading
 

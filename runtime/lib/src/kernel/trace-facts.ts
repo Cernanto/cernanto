@@ -4,10 +4,11 @@
 // What the traces of a process are kept under: the life of the agent
 // it serves, the lives of the modules it composes, the copy that
 // writes and the grant its saves are numbered by, the release's own
-// agents and the retention. The process's own life and its modules'
-// are the launch's when it names them, and asked of the names' records
-// at boot otherwise, so a copy started by a launch that names no life
-// runs under the life its name stands under.
+// agents, what each agent's traces stand at and the retention. The
+// process's own life and its modules' are the launch's when it names
+// them, and asked of the names' records at boot otherwise, so a copy
+// started by a launch that names no life runs under the life its name
+// stands under.
 
 import { serviceNameOf } from '../language/naming.js';
 import { processFacts, setProcessFacts } from './facts.js';
@@ -62,6 +63,25 @@ export function lifeOfAgent(agentId: string): LifeOf | undefined {
 /** Whether an agent is one of the release's own. */
 export function isReleaseAgent(agentId: string): boolean {
   return processFacts().releaseAgents?.includes(agentId) === true;
+}
+
+/** What an agent's traces stand at: `on`, its calls with their details
+ * and the console's lines; `debug`, the same with its debug lines;
+ * `off`, nothing stored. */
+export type TracesSetting = 'on' | 'debug' | 'off';
+
+/** What the traces of an agent stand at in this process: `debug` for
+ * the process's own agent in a verification form, whose debug section
+ * the launcher turned on; else what the launch names, for the agent
+ * served or for a module it composes; else off for an agent of the
+ * release and on for any other. */
+export function tracesOf(agentId: string): TracesSetting {
+  const facts = processFacts();
+  const own =
+    facts.agentId !== undefined && serviceNameOf(facts.agentId) === serviceNameOf(agentId);
+  if (own && facts.form !== undefined) return 'debug';
+  const named = own ? facts.traces : facts.moduleTraces?.[agentId];
+  return named ?? (isReleaseAgent(agentId) ? 'off' : 'on');
 }
 
 /** An agent to charge and its life. */

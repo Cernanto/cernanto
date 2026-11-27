@@ -2,8 +2,7 @@
 
 Type: interface
 
-An interface: the coding tools, the one surface every AI vendor agent
-implements: evaluating a single prompt and driving an interactive
+The coding tools: evaluating a single prompt and driving an interactive
 coding session. The implementor that serves a consumer which names
 none is the one the plane binds, `cernanto/harness/default`: on a
 box `cernanto dev` writes it after its login discovery, on a server

@@ -3,7 +3,8 @@
 Uses: cernanto/controller/reconcile, cernanto/controller/install, cernanto/controller/status, cernanto/controller/streams, cernanto/controller/execution
 
 The plane's controller. Ship rows into the fleet, land packages, start
-and remove agents, answer the operator's views, and run the pass that
+and remove agents, set what their traces stand at, answer the
+operator's views, and run the pass that
 makes the running fleet match the fleet record. The granted modules do
 the work: every function this agent exports forwards its input,
 untouched, to the module function of the same name and answers what it
@@ -14,8 +15,8 @@ the views to the status module.
 ## The functions
 
 `convergeOnce {}` runs one pass. `ship`, `land`, `agentStart`,
-`agentDelete`, `upgrade` and `drainHost` are the install module's
-writes. `agents`, `history` and `ls` are the status module's views (the status module's description of one agent is read
+`agentStartAlone`, `agentTraces`, `agentDelete`, `upgrade` and `drainHost` are the install
+module's writes. `agents`, `history` and `ls` are the status module's views (the status module's description of one agent is read
 through `agents`). `describe {}` is this agent's own and answers
 `{protocol: 0, role: 'plane-operator'}`. `need`, `copyReady` and
 `copyExited` are the plane's words, below.
@@ -34,8 +35,8 @@ request made inside a call is answered at once and the pass follows,
 outliving the call, and the requests that arrive while a pass runs
 are one more pass after it, however many arrived.
 
-A pass is asked when `ship`, `land`, `agentStart`, `agentDelete`,
-`upgrade` or `drainHost` returned from its module, whatever it
+A pass is asked when `ship`, `land`, `agentStart`, `agentStartAlone`,
+`agentTraces`, `agentDelete`, `upgrade` or `drainHost` returned from its module, whatever it
 answered, before the caller is answered (a forwarded call that failed
 answers its failure as it is); once when this agent loads, for what
 happened while no controller ran; when `need`, `copyReady` or

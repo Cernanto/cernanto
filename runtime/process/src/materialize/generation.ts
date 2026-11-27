@@ -70,6 +70,9 @@ export interface MaterializeGenerationAsk {
    * and linked into every generation that carries the lock; nothing
    * installs in place. */
   closures?: string | undefined;
+  /** Whether the copy keeps the machine's privileges: such a copy
+   * answers its own functions alone, and none of the modules it links. */
+  keepsPrivileges?: boolean | undefined;
   /** Where the materialize's lines go. */
   log?: ((line: string) => void) | undefined;
 }
@@ -89,6 +92,28 @@ function transient(error: unknown): boolean {
  * it is still waiting, and again every such while: the words a reader
  * of the copy's error stream sees when a boot takes long. */
 const ASK_PATIENCE_MS = 20_000;
+
+/**
+ * The modules whose functions an agent answers beside its own: every
+ * module placed in its generation, whoever published it. A copy that
+ * keeps the machine's privileges answers none: a linked function runs
+ * its caller's arguments in the copy's process, and what that copy runs
+ * it runs with the privileges kept. Neither does an agent of a
+ * verification pair, a tester or a test form: the pair is the compile's
+ * own for the moments of a verify, and nobody calls into it.
+ * @param asked - The ids the modules are placed under, the generation's
+ *   form and whether the copy keeps its privileges.
+ * @returns The ids of the modules answered, in the order placed.
+ * @example answeredModules({ placed: ['billing/tax'], form: undefined, keepsPrivileges: false });
+ */
+export function answeredModules(asked: {
+  placed: readonly string[];
+  form: GenerationFacts['form'];
+  keepsPrivileges: boolean;
+}): string[] {
+  if (asked.keepsPrivileges || asked.form === 'test' || asked.form === 'tester') return [];
+  return [...asked.placed];
+}
 
 /** Materializes a generation into its working folder and answers what
  * it derived for a generation that boots from the release (its
@@ -270,13 +295,19 @@ export async function materializeGeneration(
     return found;
   };
   const seam = { custody: DEFAULT_SEAM.custody.agent };
+  /** Each placed module, by the id it is placed under: the digest the
+   * composition names its package by, and the functions the package
+   * itself lists as its calls. */
+  const placedPackages = new Map<string, { digest: string; handlers: readonly string[] }>();
   /** Materializes one digest into a directory by the runtime's one
    * road; a module placed inside the carrier runs on the carrier's
-   * runtime. Answers the directory. */
+   * runtime, and is noted by the id it is placed under. Answers the
+   * directory. */
   const materializeInto = async (
     digest: string,
     into: string,
     composed = false,
+    placedAs?: string,
   ): Promise<string> => {
     say(`fetching ${digest.slice(0, 19)}...`);
     const tar = await bytesOf(digest);
@@ -293,6 +324,8 @@ export async function materializeGeneration(
     say(
       `${digest.slice(0, 19)}... materialized as ${materialized.agentId} (${String(tar.length)} bytes)`,
     );
+    if (placedAs !== undefined)
+      placedPackages.set(placedAs, { digest, handlers: materialized.handlers ?? [] });
     return materialized.dir;
   };
 
@@ -307,10 +340,28 @@ export async function materializeGeneration(
     // form is the package's tests as a task calling `testOf`; the test
     // form is the package itself with its mocks linked at every depth; a
     // module target's tester takes the test form as well, the mocks
-    // applied to the tester's own composition.
+    // applied to the tester's own composition. The standalone form is a
+    // module's package as a service that links the module, which the
+    // composition places like any module: under the id the fleet names
+    // the module by, the launch's target, whatever name the package
+    // itself carries.
     let ownDir: string;
     let testForm = false;
-    if (facts.form === 'tester') {
+    if (facts.form === 'standalone') {
+      const standalone = await materializePackage({
+        bytes: ownBytes,
+        into: agentDir,
+        releaseDir,
+        closures,
+        form: 'standalone',
+        target: facts.target,
+        dependency: dependencyFacts,
+        seam,
+        log: say,
+      });
+      say(`${agentId}: ${facts.target ?? ownPackage.manifest.name} by itself`);
+      ownDir = standalone.dir;
+    } else if (facts.form === 'tester') {
       const tester = await materializePackage({
         bytes: ownBytes,
         into: agentDir,
@@ -358,7 +409,7 @@ export async function materializeGeneration(
           const [moduleId, digest] = nextOne;
           placedDirs.set(
             moduleId,
-            await materializeInto(digest, composedModuleDir(ownDir, moduleId), true),
+            await materializeInto(digest, composedModuleDir(ownDir, moduleId), true, moduleId),
           );
         }
       }),
@@ -377,7 +428,21 @@ export async function materializeGeneration(
         log: say,
       });
     const placed = Object.keys(moduleDirs);
-    finishComposition(ownDir, placed);
+    const answered = answeredModules({
+      placed,
+      form: facts.form,
+      keepsPrivileges: ask.keepsPrivileges === true,
+    });
+    finishComposition(
+      ownDir,
+      placed,
+      answered.flatMap((id) => {
+        const module = placedPackages.get(id);
+        return module === undefined
+          ? []
+          : [{ id, digest: module.digest, handlers: module.handlers }];
+      }),
+    );
     if (placed.length > 0) say(`composed ${String(placed.length)} modules`);
     say(`ready: ${agentId} at ${ownDir}`);
     return bootsFromRelease ? { artifact, composition } : undefined;

@@ -54,7 +54,7 @@ value), contract? (text), specSha? (text), usesContracts? (a map of
 agent ids to sha256 hex), implements? (a list of `{id, contractSha}`),
 contractCompatibleWith? (a list of sha256 hex), staging? (a boolean),
 built?, run? (a whole number, one more for every start the
-operator asks; absent reads as zero), form? ('test'|'tester'), testOf?
+operator asks; absent reads as zero), form? ('test'|'tester'|'standalone'), testOf?
 (text), owner? (text), testerArtifact? (text), composition? (a map of
 module agent ids to artifact digests, the modules the row's
 generations link, pinned at the row's ship), life? (text, THE LIFE:

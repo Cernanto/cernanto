@@ -12,6 +12,8 @@ import type { OutputOptions } from './output.js';
 import { ServerClient, callOfRequest, recordKeyOf } from './server-client.js';
 import type { CallStreamEvent, CallSummary, LsRow, TraceRecord } from './gateway/types.gen.js';
 import { terminalIo } from './terminal.js';
+import { offSinceWords, offWords, tracesOff } from './traces.js';
+import type { TracesClient } from './traces.js';
 
 // `cernanto trace`: one agent's conversation as a chat. A run id reads
 // that run; an agent id reads its latest run; `-f` follows the agent
@@ -35,7 +37,8 @@ export function isAgentId(target: string): boolean {
  * record as it arrives), `-o json` the call tree (the walk assembled
  * here). */
 export async function traceRun(
-  client: Pick<ServerClient, 'callStream' | 'calls' | 'describe'>,
+  client: Pick<ServerClient, 'callStream' | 'calls' | 'describe'> &
+    Partial<Pick<TracesClient, 'ls'>>,
   callIdOrAgent: string,
   options: OutputOptions & {
     raw?: boolean;
@@ -45,15 +48,28 @@ export async function traceRun(
     pause?: (ms: number) => Promise<void>;
     /** The quiet after the last event that ends the read of a call still running; the proofs hand a short one. */
     quietMs?: number;
+    /** Where a line about the read goes, beside the conversation. */
+    note?: (line: string) => void;
   },
   write: (text: string) => void,
 ): Promise<void> {
   // An agent id instead of a run id reads the agent's latest run: what
   // a worker's deploy prints, and the natural question after it ("what
-  // did text/word-count do?").
-  const callId = isAgentId(callIdOrAgent)
-    ? await latestCallOf(client, callIdOrAgent, options.pause)
-    : callIdOrAgent;
+  // did text/word-count do?"). The latest run is the latest one stored:
+  // where the agent's traces are off now, the reader is told that its
+  // calls since are not there.
+  const agent = isAgentId(callIdOrAgent) ? callIdOrAgent : undefined;
+  const { ls } = client;
+  // Whether the agent's traces are off is asked of the plane once,
+  // beside the read of its latest call, and both readers take that one
+  // answer: the read that found no call, and the note beside one found.
+  const off: Promise<boolean> =
+    agent === undefined || ls === undefined
+      ? Promise.resolve(false)
+      : tracesOff({ ls: (one) => ls.call(client, one) }, agent);
+  const callId =
+    agent === undefined ? callIdOrAgent : await latestCallOf(client, agent, off, options.pause);
+  if (agent !== undefined && (await off)) options.note?.(`${offSinceWords(agent)}\n`);
   // A read ends at the records that stand: a call still running keeps
   // its stream open for the records to come, so a quiet after the last
   // event lets the stream go and the read ends; a follow is `-f`.
@@ -216,16 +232,24 @@ const ASKS = 3;
  * seconds is asked again a moment later, up to three asks, so the
  * story read right after an invoke is the whole story and not the
  * part the sinks had shipped by then; a call that keeps running is
- * read as it stands. */
+ * read as it stands. `off` is the plane's answer whether the agent's
+ * traces are off, asked once by the caller. */
 async function latestCallOf(
   client: Pick<ServerClient, 'calls' | 'describe'>,
   agentId: string,
+  off: Promise<boolean>,
   pause: (ms: number) => Promise<void> = (ms) => new Promise((done) => setTimeout(done, ms)),
 ): Promise<string> {
   for (let ask = 1; ; ask += 1) {
     const runs = await client.calls({ agent: agentId, limit: 1 });
     const latest = runs[0];
     if (latest === undefined) {
+      // An agent whose traces are off stores no call, and no wait
+      // brings one: the reader is told at once, with the way to turn
+      // them on.
+      if (ask === 1 && (await off)) {
+        throw new CernantoError({ kind: 'terminal', message: offWords(agentId) });
+      }
       // A copy stores its records a moment after its call answers: a
       // trace asked right after an invoke waits for them before saying
       // there is no call at all.
@@ -525,7 +549,12 @@ export function registerTrace(program: Command): void {
           void traceRun(
             client,
             resolveAgentSelector(target),
-            { ...outputOf(options), ...options },
+            {
+              ...outputOf(options),
+              ...options,
+              // Beside the conversation, on the other stream.
+              note: (line) => process.stderr.write(line),
+            },
             (text) => process.stdout.write(text),
           ).catch(fail);
           return;
@@ -545,6 +574,11 @@ export function registerTrace(program: Command): void {
         // plain trace, with the way to run it again.
         const fleet = await client.ls(agentId).catch((): { agents: LsRow[] } => ({ agents: [] }));
         const standing = fleet.agents.find((row) => row.agentId === agentId);
+        // An agent whose traces are off makes no record to follow: the
+        // follow says so and ends, where it would wait without end.
+        if (standing?.traces === 'off') {
+          fail(new CernantoError({ kind: 'terminal', message: offWords(agentId) }));
+        }
         const worker = standing?.type === 'worker';
         const finished = worker && standing.status.toLowerCase() === 'finished';
         // The calls followed: the agent's own and their children, so a

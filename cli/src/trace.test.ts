@@ -256,6 +256,125 @@ test("trace of an agent id reads the agent's latest call; none yet says so", asy
   );
 });
 
+test('trace of an agent whose traces are off says so at once when no call is stored, and beside the latest stored call when one is; an agent that is on is read with no word', async () => {
+  const stored = new Set(['ops/was-on']);
+  const standing: Record<string, string> = {
+    'ops/quiet': 'off',
+    'ops/was-on': 'off',
+    'ops/web': 'on',
+  };
+  const asks: number[] = [];
+  // Each look at the plane's listing, by the agent it was asked for.
+  const looks: string[] = [];
+  const client = {
+    ...fake({
+      calls: (filter: { agent?: string }) => {
+        asks.push(1);
+        return Promise.resolve(
+          stored.has(filter.agent ?? '') || filter.agent === 'ops/web'
+            ? [{ ...SUMMARY, callId: 'inv_kept', agentId: filter.agent ?? '' }]
+            : [],
+        );
+      },
+      callStream: streaming((callId) => [{ lines: [`a call  ${callId}`] }]),
+      describe: () => Promise.resolve({ agent: {} }),
+    }),
+    ls: (agent?: string) => {
+      looks.push(agent ?? '');
+      return Promise.resolve({
+        agents: [{ agentId: agent ?? '', type: 'task', traces: standing[agent ?? ''] }],
+      });
+    },
+  } as unknown as Parameters<typeof traceRun>[0];
+  // Nothing stored: the reader is told at the first ask, with no wait.
+  let waits = 0;
+  await assert.rejects(
+    traceRun(
+      client,
+      'ops/quiet',
+      {
+        pause: () => {
+          waits += 1;
+          return Promise.resolve();
+        },
+      },
+      () => undefined,
+    ),
+    /^CernantoError: the traces of ops\/quiet are off, so nothing of its calls is stored; turn them on with: cernanto traces ops\/quiet on$/,
+  );
+  assert.equal(waits, 0, 'no ask is made again for calls that cannot come');
+  assert.deepEqual(looks, ['ops/quiet'], 'the plane is asked of the agent once');
+  // Calls stored before the agent was set to off: the latest one is
+  // read, and a line beside it says the calls since are not there.
+  looks.length = 0;
+  const notes: string[] = [];
+  let text = '';
+  await traceRun(client, 'ops/was-on', { note: (line) => notes.push(line) }, (chunk) => {
+    text += chunk;
+  });
+  assert.equal(text, 'a call  inv_kept\n');
+  assert.deepEqual(notes, [
+    'the traces of ops/was-on are off: what is shown was stored before, and nothing of its calls since is; turn them on with: cernanto traces ops/was-on on\n',
+  ]);
+  assert.deepEqual(looks, ['ops/was-on'], 'and once where a call was stored');
+  // An agent that is on, and a call named by its id, are read with no word.
+  looks.length = 0;
+  const quiet: string[] = [];
+  await traceRun(client, 'ops/web', { note: (line) => quiet.push(line) }, () => undefined);
+  await traceRun(client, 'inv_direct', { note: (line) => quiet.push(line) }, () => undefined);
+  assert.deepEqual(quiet, []);
+  assert.deepEqual(looks, ['ops/web'], 'a call named by its id asks nothing of the agents');
+});
+
+test('trace of an agent that is on and has no call yet asks the plane of it once, however long it waits for a call', async () => {
+  const looks: string[] = [];
+  const client = {
+    ...fake({
+      calls: () => Promise.resolve([]),
+      describe: () => Promise.resolve({ agent: {} }),
+    }),
+    ls: (agent?: string) => {
+      looks.push(agent ?? '');
+      return Promise.resolve({ agents: [{ agentId: agent ?? '', type: 'task', traces: 'on' }] });
+    },
+  } as unknown as Parameters<typeof traceRun>[0];
+  await assert.rejects(
+    traceRun(client, 'ops/new', { pause: () => Promise.resolve() }, () => undefined),
+    /no calls of "ops\/new" yet/,
+  );
+  assert.deepEqual(looks, ['ops/new']);
+});
+
+test('trace of an agent on a plane older than the setting, which names none, waits for its calls as it always did', async () => {
+  // A missing value is no setting: nothing says the agent's traces are
+  // off, and the read asks again for a call before it says there is none.
+  let waits = 0;
+  const client = {
+    ...fake({
+      calls: () => Promise.resolve([]),
+      describe: () => Promise.resolve({ agent: {} }),
+    }),
+    ls: (agent?: string) => Promise.resolve({ agents: [{ agentId: agent ?? '', type: 'task' }] }),
+  } as unknown as Parameters<typeof traceRun>[0];
+  const said = await traceRun(
+    client,
+    'acme/echo',
+    {
+      pause: () => {
+        waits += 1;
+        return Promise.resolve();
+      },
+    },
+    () => undefined,
+  ).then(
+    () => 'read',
+    (error: unknown) => String(error),
+  );
+  assert.match(said, /no calls of "acme\/echo" yet/);
+  assert.doesNotMatch(said, /are off/);
+  assert.equal(waits, 2, 'the calls are asked for three times');
+});
+
 test('trace of an id nothing is deployed as says so, for its latest call and for a follow, in place of waiting for calls that cannot come', async () => {
   const gone = (): Promise<never> =>
     Promise.reject(new CernantoError({ kind: 'terminal', message: 'no agent "ops/deleted"' }));

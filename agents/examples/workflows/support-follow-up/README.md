@@ -10,9 +10,9 @@ prose never repeats.
 Everything below runs from the `agents/` folder against the dev
 plane, on the sandbox: the CRM holds the tickets, the chat holds the
 channels, and no account with an outside service is needed. Each
-request asks one judgment, which runs on your AI login (Claude Code or
-Codex, signed in on this machine); the compiles of steps 2 and 4 run
-on it too.
+request asks one judgment, which runs on your coding assistant (Claude
+Code or Codex, signed in on this machine); the compiles of steps 2 and
+4 run on it too.
 
 ## 1. Run it
 
@@ -166,29 +166,8 @@ on schedule.
 ## 6. Make it yours
 
 The desk is three files: the spec, its folder (`teams.json`, this
-README) and the package beside it under `.cern/`. Copy them into a
-workspace of your own, keeping the `examples/workflows/` path (an agent's id is
-its path from the workspace root), and deploy from there. The package
-lands as it is: nothing it pins has moved, and the agents it uses
-(`examples/sandbox/crm`, `connectors/chat`) are already on the plane.
-
-<!-- lab exercise -->
-
-```
-$ mkdir -p ../my-agents/examples/workflows/.cern
-$ cp examples/workflows/support-follow-up.cern.md ../my-agents/examples/workflows/
-$ cp -R examples/workflows/support-follow-up ../my-agents/examples/workflows/
-$ cp examples/workflows/.cern/support-follow-up.cern ../my-agents/examples/workflows/.cern/
-$ (cd ../my-agents && cernanto deploy examples/workflows/support-follow-up)
-landed 1 package; nothing to compile
-```
-
-The id is the path, so the copy deploys the same agent your plane
-already runs; a second desk beside it is the spec under another name
-(the file and, for the files it names, its folder), a fresh compile under
-the new id, and `cernanto delete <id>` retires the old one.
-
-Then change what is yours, from the outside in:
+README) and the package beside it under `.cern/`. They are yours to
+change where they are, from the outside in:
 
 - **The data.** The teams and their channels are `teams.json`: edit it
   and deploy; the spec does not change.
@@ -201,7 +180,7 @@ Then change what is yours, from the outside in:
   when a reminder went out, and deploy: an amend, the tests updated
   where the promise moved, two or three minutes.
 
-<!-- lab edit ../my-agents/examples/workflows/support-follow-up.cern.md
+<!-- lab edit examples/workflows/support-follow-up.cern.md
 window, send the team one reminder on the same channel.
 =>
 window, send the team one reminder on the same channel and tell the
@@ -209,7 +188,7 @@ triage channel that the ticket is still open.
 -->
 
 ```
-$ (cd ../my-agents && cernanto deploy examples/workflows/support-follow-up)
+$ cernanto deploy examples/workflows/support-follow-up
 $ cernanto call examples/workflows/support-follow-up followUp ticketId=T-7005 responseWindowMinutes:=1
 {"category":"technical","team":"Engineering","channel":"#engineering","outcome":"reminder"}
 $ cernanto call examples/sandbox/chat read chat="#triage"
@@ -229,6 +208,15 @@ $ curl -s -X POST "http://127.0.0.1:7434/v1/agents/examples%2Fworkflows%2Fsuppor
     -H 'content-type: application/json' -d '{"args":{"ticketId":"T-7004"}}'
 {"result":{"category":"billing","team":"Finance","channel":"#finance","outcome":"reminder"},"callId":"examples_workflows_support_follow_up:20031:c-6d1f..."}
 ```
+
+A project of your own starts from the same three files, in a workspace
+of your own outside this repository, keeping the `examples/workflows/`
+path (an agent's id is its path from the workspace root). `cernanto
+registry get examples/workflows/support-follow-up`, run in that folder,
+brings them. The id is the path, so it deploys the same agent your plane
+already runs; a second desk beside it is the spec under another name
+(the file and, for the files it names, its folder), a fresh compile under
+the new id, and `cernanto delete <id>` retires the old one.
 
 ## The real form
 

@@ -21,7 +21,8 @@
 // plane's word to the copy, the host job's, and the copy leaves on it.
 // A post to `/stream` follows the copy's own traces of one request (its
 // id the records' `callId`; everything the copy runs when the body names
-// none): a response kept open, one line per record, first those the
+// none): a response kept open, its first line saying what the traces of
+// the copy's agent stand at, then one line per record, first those the
 // store has not taken yet, then each as it is made, and the fact that a
 // request is over; a follower that falls behind is let go, and joins
 // again from its cursor.
@@ -48,6 +49,7 @@ import type { Word } from './fence.js';
 import { ownedByKernel } from './listeners.js';
 import { onPause } from './pause.js';
 import { COPY_ROADS } from './seam.js';
+import { tracesOf } from './trace-facts.js';
 import type { RecordedError } from './log.js';
 import { deliverToDesk } from './transport.js';
 import type { CallLane, Handing } from './units.js';
@@ -336,9 +338,18 @@ function followTraces(response: ServerResponse, story: string | undefined): void
     response.end();
   };
   response.on('close', close);
-  // The first line says the stream is open: a follower holds what comes
-  // after it and reads the store once it has it.
-  response.write(`${JSON.stringify({ open: true, callId: story ?? null })}\n`);
+  // The first line says the stream is open, and what the traces of the
+  // copy's own agent stand at: a follower holds what comes after it and
+  // reads the store once it has it, and one that reads `off` knows no
+  // line of the agent's own will come.
+  const agentId = processFacts().agentId;
+  response.write(
+    `${JSON.stringify({
+      open: true,
+      callId: story ?? null,
+      ...(agentId === undefined ? {} : { traces: tracesOf(agentId) }),
+    })}\n`,
+  );
   watch.end = traceFollow(
     story,
     (text) => {

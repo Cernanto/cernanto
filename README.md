@@ -62,7 +62,7 @@ npm install -g cernanto
 cernanto dev
 ```
 
-Run that block on its own. If an assistant is already signed in, `cernanto dev` detects it and returns. Otherwise it asks `connect which? [1]`: choose an assistant to sign in, or press **Ctrl-C at that question** to continue without one. The plane is already running; Enter selects Claude Code rather than skipping the question.
+Run that block on its own. If an assistant is already signed in, `cernanto dev` detects it and returns. Otherwise it asks `connect which? [1]`: choose an assistant to sign in, or press **Ctrl-C at that question** to continue without one. The runtime is already running; Enter selects Claude Code rather than skipping the question.
 
 Once you are back at the shell prompt, deploy the examples:
 
@@ -75,9 +75,19 @@ cernanto call examples/basics/counter next
 
 A fresh counter returns `1`; call it again and it returns `2`. Its count survives a process restart. [Try the interruption](docs/RUNTIME-AND-GUARANTEES.md#check-recovery-with-the-counter) with no model account needed.
 
+**See it in your browser.** The runtime serves its own web UI. One command opens it:
+
+<!-- lab manual: it opens a browser on the reader's own machine -->
+
+```bash
+cernanto ui
+```
+
+Select `examples/basics/counter` in the list of agents. The call you just made is there, read as a conversation. Press **Next** in the box under it, and it answers the next number. [The web UI](docs/UI.md) shows what else is on that screen.
+
 **Then ask the helpdesk.** Have Claude Code or Codex installed and signed in with your Claude or ChatGPT subscription, or [configure an API key](docs/RUNTIME-AND-GUARANTEES.md#coding-assistants-model-access-and-local-services). Model usage is through that provider. The included handbook and sandbox need no Slack, CRM or email account.
 
-If you skipped sign-in or signed in separately afterwards, run this command on its own and finish any sign-in prompt. It records the login for the plane before the helpdesk call:
+If you skipped sign-in or signed in separately afterwards, run this command on its own and finish any sign-in prompt. It records the login for the runtime before the helpdesk call:
 
 ```bash
 cernanto dev
@@ -98,6 +108,8 @@ An example answer from the included handbook:
 ```
 
 The wording can vary. Ask about the Berlin office's Wi-Fi password and the agent should say that the handbook does not answer it.
+
+In the web UI, select `examples/workflows/helpdesk`. Its **Trace** shows how it reached that answer: the handbook pages it chose, then the answer it wrote from them.
 
 The examples deploy from their existing packages. Editing a specification and deploying it invokes the compiler.
 
@@ -171,7 +183,7 @@ A deploy checks the translation before putting it into use:
 
 **Consistency has a precise boundary.** The deployed program fixes the control flow; fresh model answers can still vary or be wrong. Recovery reuses recorded model results instead of asking again. Checks and tests provide evidence, not a proof that the code perfectly implements the English.
 
-The compiler and control plane are themselves [written in Cernanto](cernanto/compile.cern.md). In the platform tree measured on 17 November 2026, **65 English specifications, about 16,500 lines, accompany 56,700 lines of generated TypeScript and 28,800 lines of tests**. The handwritten runtime and CLI are separate. [The counts and scope](docs/WHY-CERNANTO.md#the-platform-in-numbers) explain that snapshot.
+The compiler and control plane are themselves [written in Cernanto](cernanto/compile.cern.md). The handwritten runtime and CLI are separate. [Why Cernanto](docs/WHY-CERNANTO.md#the-compiler-is-written-in-cernanto) says which parts are generated and which are written by hand.
 
 Read more about [compilation, typed model calls and testing](docs/HOW-IT-WORKS.md).
 
@@ -179,7 +191,7 @@ Read more about [compilation, typed model calls and testing](docs/HOW-IT-WORKS.m
 
 The [support follow-up](agents/examples/workflows/support-follow-up/README.md) classifies a ticket, tells the responsible team, waits for a person to respond, and sends a reminder if nobody does.
 
-In an application, keeping that wait alive can mean a queue, a worker, a delayed job, a state row and a retry policy. Here it is a sentence in the agent's page.
+In an application, keeping that wait alive can mean a queue, a worker, a delayed job, a state row and a retry policy. Here it is a sentence in the agent's source.
 
 Its walkthrough interrupts the process twenty seconds into a one-minute wait. The runtime restarts it, the classification is reused, and the workflow finishes with a reminder. The recorded run returns:
 
@@ -229,6 +241,8 @@ Each workflow includes its English source, compiled package and walkthrough. The
 
 [All examples and connectors](agents/README.md)
 
+With their recorded runs on the site: [the refund desk](https://cernanto.com/examples/refund-desk), [the support follow-up](https://cernanto.com/examples/support-follow-up) and [the invoice approval](https://cernanto.com/examples/invoice-approval).
+
 ## Comparing Cernanto
 
 Cernanto combines a programming language with a durable workflow engine for AI agents, integrations and human-in-the-loop workflows. It is an alternative to maintaining the procedure as application code or a visual workflow.
@@ -245,6 +259,8 @@ LangGraph and Mastra also support predefined workflows; a model choosing every s
 Existing Python and TypeScript services can stay where they run. Agents reach them through OpenAPI or MCP, reuse npm packages, and expose APIs to your applications.
 
 [Detailed comparisons and the mapping from Python or TypeScript](docs/COMPARISONS.md) · [Why compile an agent?](docs/WHY-CERNANTO.md)
+
+Each comparison on the site, with a recorded run and the limits: [n8n, Zapier and Make](https://cernanto.com/comparisons/workflow-automation) · [Temporal, Inngest and Restate](https://cernanto.com/comparisons/durable-execution) · [LangGraph, CrewAI and the agent SDKs](https://cernanto.com/comparisons/agent-frameworks) · [Spec Kit and Kiro](https://cernanto.com/comparisons/spec-driven-development)
 
 ## Guarantees and limits
 
@@ -278,6 +294,7 @@ See [LICENSE](LICENSE) for the full terms.
 | Read next                                                | What you will find                                                          |
 | -------------------------------------------------------- | --------------------------------------------------------------------------- |
 | [Writing agents](docs/WRITING-AGENTS.md)                 | The language, dependencies, tests and changes to deployed agents            |
+| [The web UI](docs/UI.md)                                 | The runtime's own screen: agents, calls as conversations, source, settings  |
 | [How it works](docs/HOW-IT-WORKS.md)                     | Compilation, generated code, model calls, contracts and integrations        |
 | [Why Cernanto](docs/WHY-CERNANTO.md)                     | The source model, design rationale and compiler written in its own language |
 | [Comparisons](docs/COMPARISONS.md)                       | Agent frameworks, workflow tools, durable engines and existing code         |

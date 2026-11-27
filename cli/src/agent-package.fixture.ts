@@ -18,7 +18,7 @@ import { RegistryClient } from './registry.js';
 // The reading verbs' fixture: the package of a small agent with its
 // spec, contract, code, tests and lock, the tree it lies in, and a
 // registry of it served in process, for the proofs of `contract`,
-// `code` and `tests`.
+// `compiled` and `tests`.
 
 /** A plane of the given functions alone; a proof fakes what it reads. */
 export function fakePlane(overrides: Partial<Record<keyof ReadPlane, unknown>>): ReadPlane {

@@ -9,14 +9,18 @@ import type { ReadSeams } from './agent-package.js';
 import { fail, outputOf } from './output.js';
 import type { OutputOptions } from './output.js';
 
-// `cernanto code <agent-id | file.cern | name[@version]>`: the code the
-// compile wrote for an agent, every file under a heading with its path
-// in the package, the entry module first. The argument is read as
+// `cernanto compiled <agent-id | file.cern | name[@version]>`: the code
+// the compile wrote for an agent, every file under a heading with its
+// path in the package, the entry module first. The argument is read as
 // `contract` reads it: a deployed agent, a package file, or a package
 // in the registry.
 
 /** The code of the package an argument names, as text or json. */
-export function codeOf(target: string, options: OutputOptions, seams: ReadSeams): Promise<string> {
+export function compiledOf(
+  target: string,
+  options: OutputOptions,
+  seams: ReadSeams,
+): Promise<string> {
   return folderOfTarget(
     target,
     PACKAGE_CODE_DIR,
@@ -26,9 +30,9 @@ export function codeOf(target: string, options: OutputOptions, seams: ReadSeams)
   );
 }
 
-export function registerCode(program: Command): void {
+export function registerCompiled(program: Command): void {
   program
-    .command('code')
+    .command('compiled')
     .argument(
       '<agent-id-or-package>',
       'an agent by id, a .cern package file, or a registry package by name or name@version',
@@ -37,7 +41,7 @@ export function registerCode(program: Command): void {
     .description('the code the compile wrote for an agent, every file under its name')
     .action(async (target: string, options: { output?: string }) => {
       try {
-        process.stdout.write(await codeOf(target, outputOf(options), readSeams()));
+        process.stdout.write(await compiledOf(target, outputOf(options), readSeams()));
       } catch (error) {
         fail(error);
       }

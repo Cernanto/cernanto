@@ -84,6 +84,6 @@ $ cernanto call examples/sandbox/purchasing receiptsOf poId=PO-1042
 ```
 
 `cernanto contract examples/sandbox/<store>` prints every function with what it
-takes and answers; `cernanto code examples/sandbox/<store>` the code the compile
+takes and answers; `cernanto compiled examples/sandbox/<store>` the code the compile
 wrote, and `cernanto tests examples/sandbox/<store>` the tests it proved live
 against the seeds.

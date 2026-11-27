@@ -106,6 +106,45 @@ export type AgentStartResult = {
 };
 
 /**
+ * What an agent's traces are set to.
+ */
+export type AgentTracesRequest = {
+    traces: Traces;
+};
+
+/**
+ * A write of an agent's traces.
+ */
+export type AgentTracesResult = {
+    agentId: string;
+    traces: Traces;
+    /**
+     * Whether what the agent's traces stand at moved.
+     */
+    changed: boolean;
+    /**
+     * The agents that start again for it, sorted by id: none when nothing changed; the agent itself when it runs; for a module, the agents that link it.
+     */
+    starts: Array<AgentStarting>;
+};
+
+/**
+ * An agent that starts again.
+ */
+export type AgentStarting = {
+    agentId: string;
+    /**
+     * The agent's type: `service`, `task`, `job` or `worker`.
+     */
+    type: string;
+};
+
+/**
+ * What an agent's traces stand at: `on` stores each call with its details and the console's lines, `debug` the same with the agent's debug lines, `off` nothing.
+ */
+export type Traces = 'on' | 'debug' | 'off';
+
+/**
  * The release the plane's hosts upgrade to.
  */
 export type UpgradeRequest = {
@@ -672,6 +711,14 @@ export type InvokeRequest = {
      * Names the call when given: requests under one key are one call while it runs and until its answer is delivered.
      */
     idempotencyKey?: string;
+    /**
+     * For a module's function: the agent to run it inside, one of the agents that link the module. The call is that agent's own, with the module's memory in the copy that takes it. Absent, the call runs the module by itself, in its standalone agent, which the call starts when the module is not started by itself.
+     */
+    in?: string;
+    /**
+     * The contract the arguments were read against: the sha256 hex of its text, as `describe` answered it. Given, the call is refused when the agent's contract is of any other text now, and, for an interface, when the implementor it is called through implements it under another contract, so arguments shaped for one contract never reach another. Absent, the call is made as it is.
+     */
+    contractSha?: string;
 };
 
 export type InvokeResponse = {
@@ -683,6 +730,10 @@ export type InvokeResponse = {
      * The id of the call's request, under which its records are kept: the call's handle with the request's own part after one more colon.
      */
     callId: string;
+    /**
+     * The module's standalone agent, when this call started the module by itself; absent from every other answer.
+     */
+    started?: string;
 };
 
 /**
@@ -694,6 +745,10 @@ export type InvokeStreamEvent = {
          * The id of the call's request, under which its records are kept: the call's handle with the request's own part after one more colon.
          */
         callId: string;
+        /**
+         * The module's standalone agent, when this call started the module by itself; absent otherwise.
+         */
+        started?: string;
     };
     record?: TraceRecord;
     lines?: Array<string>;
@@ -929,13 +984,17 @@ export type FleetAgentRowWire = {
      */
     testerArtifact?: string;
     /**
-     * A verification pair row's form: the package itself with the mocks its tests wrote linked in place of the mocked edges (test), or its tests as a task with one function run (tester).
+     * The form the row's package takes. A verification pair row's: the package itself with the mocks its tests wrote linked in place of the mocked edges (test), or its tests as a task with one function run (tester). Or a module started by itself (standalone): a service that links the module and has no function of its own.
      */
-    form?: 'test' | 'tester';
+    form?: 'test' | 'tester' | 'standalone';
     /**
      * A tester row's target: the id its tests call.
      */
     testOf?: string;
+    /**
+     * For a verification pair row, the agent the pair verifies; for a standalone row, the module it links.
+     */
+    target?: string;
     /**
      * The handle of the compile call that shipped a verification pair row; the plane removes the pair when that compile is gone.
      */
@@ -1179,6 +1238,7 @@ export type LsRow = {
      */
     costUsd?: number;
     functions?: Array<LsFunction>;
+    traces?: Traces;
 };
 
 /**
@@ -1193,6 +1253,11 @@ export type LiveRecord = {
  * One trace record of any kind.
  */
 export type TraceRecord = HandlerRecord | AgentCallRecord | StepRecord | SleepRecord | BeginRecord | LogRecord;
+
+/**
+ * The file's own name, as the UI's document names it.
+ */
+export type UiFile = string;
 
 /**
  * The agent's id, url-encoded (its slashes as %2F).
@@ -1635,7 +1700,7 @@ export type InvokeData = {
 
 export type InvokeErrors = {
     /**
-     * Exactly `agent "<agentId>" is a module; it runs inside <the composing agents, sorted, comma-separated, or "no agent yet">: invoke one of them`, or `agent "<agentId>" is an interface with no default implementor; it is implemented by <the implementors, sorted, comma-separated, or "no agent yet">`; else the callee's own terminal or contract-violation error.
+     * For a module, each exactly, where <the agents> are the module's composing agents, sorted, comma-separated: called with no `in` while it is not started by itself and cannot be, the controller's refusal of its start, in its words: `"<agentId>" carries no contract; a module is linked by its contract, so it is not started by itself`, `"<agentId>" is a compile's test form; it is not started by itself`, or `"<agentId>-standalone" is on the fleet and is not "<agentId>" started by itself; remove it first (cernanto delete <agentId>-standalone)`; with an `in` that is not one of them, `agent "<agentId>" does not run inside "<in>"; it runs inside <the agents, or "no agent yet">`; with an `in` that is a worker, `"<in>" is a worker and takes no call`; with an `in` held to another package of the module than the one deployed, `"<in>" links an earlier "<agentId>" than the one deployed; deploy "<in>" again to call it there (cernanto deploy <in>)`; where no copy of the agent called has the module's function as deployed while that agent is not rolling onto it, for an `in`, `"<in>" does not answer "<agentId>.<function>" in the generation it runs, as one started under an earlier release of the plane does not. A new generation of "<in>" answers it; or call "<agentId>" by itself (cernanto call <agentId> <function>)`, and for the module started by itself, `"<agentId>" is started by itself in a generation that does not answer "<agentId>.<function>"; delete it and call again (cernanto delete <agentId>-standalone)`. For an `in` on an agent that is no module, exactly `agent "<agentId>" is not a module; it is called as itself`. Or `agent "<agentId>" is an interface with no default implementor; it is implemented by <the implementors, sorted, comma-separated, or "no agent yet">`; or, for a body that names `contractSha` and an interface whose default implementor's row implements it under another contract, or names it under `implements` not at all, exactly `"<the implementor>" implements "<agentId>" under another contract than the one deployed; deploy "<the implementor>" again (cernanto deploy <the implementor>)`; else the callee's own terminal or contract-violation error.
      */
     400: ErrorResponse;
     /**
@@ -1647,6 +1712,10 @@ export type InvokeErrors = {
      */
     404: ErrorResponse;
     /**
+     * For a body that names `contractSha` while the agent's row carries a contract of another text (its sha256 is another value; a contract the row lists as one it is compatible with is another contract to a call, whose arguments ride under their parameters' names), exactly `agent "<agentId>" was deployed again since this call was prepared, under another contract; read it again (cernanto contract <agentId>)`, of the kind `terminal`. Nothing was called.
+     */
+    409: ErrorResponse;
+    /**
      * A judgment-inconclusive failure.
      */
     422: ErrorResponse;
@@ -1655,7 +1724,7 @@ export type InvokeErrors = {
      */
     500: ErrorResponse;
     /**
-     * After sixty seconds of target-unavailable: `{error: {kind: "retryable", message: "invoke <service>/<function> failed: <its message>"}}`; else the callee's retryable error.
+     * After sixty seconds of target-unavailable, or of a module's function refused by copies that link another package of the module than the one deployed while the agent called rolls onto it: `{error: {kind: "retryable", message: "invoke <service>/<function> failed: <its message>"}}`; a call that names `in`, or `contractSha`, while the fleet cannot be read: `{error: {kind: "retryable", message: "the fleet cannot be read: <its message>"}}`; else the callee's retryable error.
      */
     503: ErrorResponse;
 };
@@ -1706,7 +1775,7 @@ export type InvokeStreamData = {
 
 export type InvokeStreamErrors = {
     /**
-     * As `invoke` answers it: a module, or an interface with no default implementor, named in the same words.
+     * As `invoke` answers it: a module that is called nowhere it runs, an `in` that does not fit, an agent no copy of which has the module's function, or an interface with no default implementor, named in the same words.
      */
     400: ErrorResponse;
     /**
@@ -1717,6 +1786,10 @@ export type InvokeStreamErrors = {
      * As `invoke` answers it: exactly `no agent "<agentId>"`, or exactly `agent "<agentId>" has no function "<function>"; cernanto contract <agentId> lists its functions`.
      */
     404: ErrorResponse;
+    /**
+     * As `invoke` answers it: the agent was deployed again, under another contract, since the call was prepared.
+     */
+    409: ErrorResponse;
     /**
      * A route that failed unexpectedly, the same shape.
      */
@@ -1752,6 +1825,10 @@ export type AgentStartData = {
 
 export type AgentStartErrors = {
     /**
+     * The controller's refusal, in its words: `no agent "<agentId>" on the fleet`; `"<agentId>" is a <type>; only a worker's, a service's or a job's program starts`; for a module, `"<agentId>" is a module; a call of it starts it by itself (cernanto call <agentId> <function>)`; and for a module started by itself named by its standalone agent's id, `"<agentId>" is "<the module>" started by itself; delete it and the next call of "<the module>" starts it anew (cernanto delete <agentId>)`.
+     */
+    400: ErrorResponse;
+    /**
      * No admitted bearer: exactly `unauthorized: the API needs the bearer`, or `unauthorized: the operator token "<name>" was revoked`.
      */
     401: ErrorResponse;
@@ -1775,6 +1852,48 @@ export type AgentStartResponses = {
 };
 
 export type AgentStartResponse = AgentStartResponses[keyof AgentStartResponses];
+
+export type AgentTracesData = {
+    body: AgentTracesRequest;
+    path: {
+        /**
+         * The agent's id, url-encoded (its slashes as %2F).
+         */
+        agentId: string;
+    };
+    query?: never;
+    url: '/v1/agents/{agentId}/traces';
+};
+
+export type AgentTracesErrors = {
+    /**
+     * The controller's refusal, in its words: `no agent "<agentId>"`; `"<agentId>" is an interface; it runs no code, so it keeps no traces`; `"<agentId>" belongs to a compile's test run, which is always traced in debug`; `"<agentId>" keeps no traces; its log is its record`; `"<agentId>" is a module; a module's traces are on or off, and its debug lines are kept where an agent that links it is set to debug`; or, for a change an agent would have to start again for and cannot, `"<agentId>" cannot start again as it is deployed: a module it uses changed its contract since it was compiled; compile it against the module as it is deployed now, then set its traces` and, for a module, `"<agentId>" is linked by <agents>, which cannot start again as deployed: a module used there changed its contract since the compile; compile against the modules as they are deployed now, then set its traces`. A refusal writes nothing.
+     */
+    400: ErrorResponse;
+    /**
+     * No admitted bearer: exactly `unauthorized: the API needs the bearer`, or `unauthorized: the operator token "<name>" was revoked`.
+     */
+    401: ErrorResponse;
+    /**
+     * A route that failed unexpectedly, the same shape.
+     */
+    500: ErrorResponse;
+    /**
+     * A retryable or target-unavailable failure: the platform agent behind the operation did not answer (a controller restart, a substrate hiccup), the same shape; retry.
+     */
+    503: ErrorResponse;
+};
+
+export type AgentTracesError = AgentTracesErrors[keyof AgentTracesErrors];
+
+export type AgentTracesResponses = {
+    /**
+     * The setting stands; the plane starts the named agents again.
+     */
+    200: AgentTracesResult;
+};
+
+export type AgentTracesResponse = AgentTracesResponses[keyof AgentTracesResponses];
 
 export type CallsStreamData = {
     body?: never;
@@ -2368,6 +2487,57 @@ export type PackageExistsResponses = {
 
 export type PackageExistsResponse = PackageExistsResponses[keyof PackageExistsResponses];
 
+export type PackageFileData = {
+    body?: never;
+    path: {
+        /**
+         * The package digest, `sha256:` and hex.
+         */
+        digest: string;
+    };
+    query: {
+        /**
+         * The file's path inside the package: `agent.cern.md`, `cernanto.json`, `contract.d.ts`, `code/index.ts`, a test under `tests/`.
+         */
+        name: string;
+    };
+    url: '/v1/packages/{digest}/file';
+};
+
+export type PackageFileErrors = {
+    /**
+     * The warehouse's own words for a name that is not a plain relative path; kind terminal.
+     */
+    400: ErrorResponse;
+    /**
+     * No admitted bearer: exactly `unauthorized: the API needs the bearer`, or `unauthorized: the operator token "<name>" was revoked`.
+     */
+    401: ErrorResponse;
+    /**
+     * Exactly `no file "<name>" in <digest>`, carrying no kind, for a package the plane does not hold and for one that carries no such file.
+     */
+    404: ErrorResponse;
+    /**
+     * A route that failed unexpectedly, the same shape.
+     */
+    500: ErrorResponse;
+    /**
+     * A retryable or target-unavailable failure: the platform agent behind the operation did not answer (a controller restart, a substrate hiccup), the same shape; retry.
+     */
+    503: ErrorResponse;
+};
+
+export type PackageFileError = PackageFileErrors[keyof PackageFileErrors];
+
+export type PackageFileResponses = {
+    /**
+     * The file's text.
+     */
+    200: Blob | File;
+};
+
+export type PackageFileResponse = PackageFileResponses[keyof PackageFileResponses];
+
 export type AuthLogoutData = {
     body?: never;
     path?: never;
@@ -2853,3 +3023,110 @@ export type OpenapiDocumentResponses = {
 };
 
 export type OpenapiDocumentResponse = OpenapiDocumentResponses[keyof OpenapiDocumentResponses];
+
+export type UiDocumentData = {
+    body?: never;
+    headers?: {
+        /**
+         * What the browser says the request is for. A request for a frame is refused, so no other site's page shows the UI inside itself.
+         */
+        'sec-fetch-dest'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/';
+};
+
+export type UiDocumentErrors = {
+    /**
+     * Exactly `the UI is not answered into a frame`, for a request whose `sec-fetch-dest` is `iframe`, `frame`, `embed` or `object`; kind terminal.
+     */
+    403: ErrorResponse;
+    /**
+     * Exactly `this release carries no UI`, when the release has no document for it; kind terminal.
+     */
+    404: ErrorResponse;
+    /**
+     * A route that failed unexpectedly, the same shape.
+     */
+    500: ErrorResponse;
+};
+
+export type UiDocumentError = UiDocumentErrors[keyof UiDocumentErrors];
+
+export type UiDocumentResponses = {
+    /**
+     * The document.
+     */
+    200: Blob | File;
+};
+
+export type UiDocumentResponse = UiDocumentResponses[keyof UiDocumentResponses];
+
+export type UiScriptData = {
+    body?: never;
+    path: {
+        /**
+         * The file's own name, as the UI's document names it.
+         */
+        file: string;
+    };
+    query?: never;
+    url: '/ui/js/{file}';
+};
+
+export type UiScriptErrors = {
+    /**
+     * Exactly `no script "<file>"`, for a name that is not one of the UI's own scripts; kind terminal.
+     */
+    404: ErrorResponse;
+    /**
+     * A route that failed unexpectedly, the same shape.
+     */
+    500: ErrorResponse;
+};
+
+export type UiScriptError = UiScriptErrors[keyof UiScriptErrors];
+
+export type UiScriptResponses = {
+    /**
+     * The script.
+     */
+    200: Blob | File;
+};
+
+export type UiScriptResponse = UiScriptResponses[keyof UiScriptResponses];
+
+export type UiStylesheetData = {
+    body?: never;
+    path: {
+        /**
+         * The file's own name, as the UI's document names it.
+         */
+        file: string;
+    };
+    query?: never;
+    url: '/ui/css/{file}';
+};
+
+export type UiStylesheetErrors = {
+    /**
+     * Exactly `no stylesheet "<file>"`, for a name that is not one of the UI's own stylesheets; kind terminal.
+     */
+    404: ErrorResponse;
+    /**
+     * A route that failed unexpectedly, the same shape.
+     */
+    500: ErrorResponse;
+};
+
+export type UiStylesheetError = UiStylesheetErrors[keyof UiStylesheetErrors];
+
+export type UiStylesheetResponses = {
+    /**
+     * The stylesheet.
+     */
+    200: Blob | File;
+};
+
+export type UiStylesheetResponse = UiStylesheetResponses[keyof UiStylesheetResponses];

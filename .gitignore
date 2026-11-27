@@ -2,5 +2,8 @@ node_modules/
 dist/
 *.tsbuildinfo
 .DS_Store
+# The web UI's gateway client, made from the gateway's OpenAPI document
+# before every build of the UI (ui/scripts/gateway-client.mjs).
+ui/src/gateway/
 # The packed release.
 dist-release/
