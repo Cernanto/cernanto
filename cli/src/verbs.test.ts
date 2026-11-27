@@ -20,10 +20,12 @@ type Row = [path: string, args: string, flags: string];
 const VERBS: Row[] = [
   // Plane and box
   ['dev', 'verb?', '--coder --data-dir --release-dir --port --registry'],
+  ['ui', '', ''],
   ['login', 'url', '--token --name'],
   ['context', 'name?', ''],
   ['completion', 'shell', ''],
   ['config', 'agent? setting?', ''],
+  ['traces', 'agent-id? setting?', '--output --no-headers'],
   ['token create', 'name', ''],
   ['token list', '', '--output --no-headers'],
   ['token revoke', 'name', ''],
@@ -41,17 +43,18 @@ const VERBS: Row[] = [
     '--no-verify --follow --quiet --utc --recompile --dry-run --fail-fast --no-ask --contract --contracts --new-contract --no-deps --output',
   ],
   ['contract', 'agent-id-or-package', '--output'],
-  ['code', 'agent-id-or-package', '--output'],
+  ['compiled', 'agent-id-or-package', '--output'],
   ['tests', 'agent-id-or-package', '--output'],
   ['source', 'agent-id-or-package', '--output --to'],
   ['skill', '', '--global'],
   // Operating
   ['ls', 'agent-id?', '--output --no-headers --watch'],
   ['calls', 'agent-id?', '--limit --output --no-headers'],
-  ['call', 'agent-id function ...args?', '--args --output --quiet --details --debug'],
+  ['call', 'agent-id function ...args?', '--args --in --output --quiet --details --debug'],
   ['trace', 'call-id-or-agent', '--follow --backlog --raw --details --debug --output'],
   ['cancel', 'call-id', ''],
   ['delete', 'agent-id', '--force'],
+  ['restart', 'agent-id', ''],
   // Credentials
   ['auth list', 'agent?', '--output --no-headers'],
   ['auth login', 'agent? name?', '--all --from'],

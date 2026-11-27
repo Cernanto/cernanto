@@ -6,7 +6,7 @@ is the agent's id, so `payments/recovery.cern.md` is
 `payments/recovery`. The `# Title` is a heading for the
 reader, and the prose is the source: a deploy compiles it into
 verified, durable TypeScript, derives tests from the prose itself, and
-ships it. You describe behavior in plain English, and the page
+ships it. You describe behavior in plain English, and the source
 declares its premises with a handful of labels: the kind of agent
 when it is not a task (`Type:`), what it works with (`Uses:`), what
 it implements (`Implements:`), and, under a `## Tests` heading, the
@@ -35,7 +35,7 @@ Generate the customers and payment histories with the @faker-js/faker
 npm package; never hand-write fixture records.
 ```
 
-The compile prints what the page declares before it writes anything:
+The compile prints what the source declares before it writes anything:
 
 ```
 payments/recovery  plan  reads a service, from the Type: label
@@ -53,11 +53,12 @@ only when it changes an outcome someone cares about; a sentence that
 has to be read twice is split or rewritten. Every branch you care
 about is a sentence (the happy path, the refusal, the duplicate);
 every branch you leave out, the code leaves out too. A spec grows with
-the branches it cares about and can run to a page; what it never
+the branches it cares about and can run long; what it never
 carries is two jobs, which is two agents, one using the other.
 
 Grant what the agent works with, and never say how to work with it. The
-coder that compiles your spec reads the dependency's contract, the
+coding assistant that compiles your spec, Claude Code or Codex, reads
+the dependency's contract, the
 tools of an MCP server, the operations of an OpenAPI document and the
 API of an npm package, and looks up a library's official docs on the
 web. It also knows the platform: how to wait a month at no cost, how
@@ -77,8 +78,8 @@ webhook, one reminder and never two), and most such choices are made
 by what you grant: a spec that grants no webhook polls, and one that
 grants the vendor's npm package and not its MCP server uses the SDK.
 
-The same agent twice. The first tells the coder how to use a library
-it already reads; the second says what the agent does:
+The same agent twice. The first tells the coding assistant how to use
+a library it already reads; the second says what the agent does:
 
 ```md
 # Slack Send
@@ -104,8 +105,8 @@ and the message's id.
 
 Grant an agent and stop there. Say `text/fact-check` answers whether a
 claim about the world is true, with the sources it read. This spec
-grants it once, on its `Uses:` line, and says only the work: the coder
-reads the checker's contract and calls it where the work needs it, so
+grants it once, on its `Uses:` line, and says only the work: the coding
+assistant reads the checker's contract and calls it where the work needs it, so
 the prose neither names it nor says how it is asked, and repeating
 what the checker does would be a second copy of its contract to keep
 in step:
@@ -196,26 +197,27 @@ git (`*.cern binary` in `.gitattributes`).
   line that grants a published agent is enough, the deploy installs it. An id
   with a spec in your workspace has one road, its spec.
 - **A published agent taken as source is yours:**
-  `cernanto registry get <name>` lays its page beside its package in
-  your workspace, with the files the page names, and
+  `cernanto registry get <name>` lays its source beside its package in
+  your workspace, with the files it names, and
   `cernanto registry get <folder>/` does it for every agent under a
   folder. A deploy lands it with nothing to compile, and from then on
   you change its sentences like your own; a later version of the
   registry no longer lands over it.
 - **The source of any package is one command away:**
-  `cernanto source <id>` prints the page an agent was compiled from,
+  `cernanto source <id>` prints the source an agent was compiled from,
   deployed, in your tree or in the registry, and
-  `cernanto source <id> --to <folder>` writes the page under that
+  `cernanto source <id> --to <folder>` writes it under that
   folder with every file it names, each at its place, for a review, a
-  copy to keep, or a start of your own.
+  copy to keep, or a start of your own. An agent written in the
+  plane's [web UI](UI.md) is taken to a folder the same way.
 
 ## How the agent lives
 
 Most agents are the ordinary kind, a task: each call is its own
 world, nothing carries to the next, and the plane runs as many copies
 as the calls need. You write nothing about that. Five kinds beside it
-change how an agent runs, and a page that is one of them says so on a
-`Type:` line, one line in its head, the kind's one home; a page
+change how an agent runs, and an agent that is one of them says so on a
+`Type:` line, one line in its head, the kind's one home; an agent
 without one is a task, and the prose still says what the kind means
 for the work ("keep one count for everyone who calls this agent"):
 
@@ -262,7 +264,7 @@ What each kind means on the plane, for when you want the detail:
   open conversation). It serves its calls side by side: a call that
   waits holds nobody up. A wait is a sentence ("waits until the
   approval arrives, or the time given passes"); how the code waits is
-  the coder's.
+  the coding assistant's.
 - **job**: a callable operation that runs live, a command-line tool
   whose changing answers steer the work. A retryable failure runs the
   body again from the start, so say what must not happen twice (a
@@ -306,8 +308,8 @@ agent compiles or lands everything beneath it.
 Everything an agent touches is granted on its `Uses:` line; what the
 line does not name is unreachable by construction. The entries follow
 the colon, separated by commas, or stand one per bullet under a bare
-`Uses:`; the prose then says what the agent does, and the coder
-reaches each grant where the work needs it:
+`Uses:`; the prose then says what the agent does, and the coding
+assistant reaches each grant where the work needs it:
 
 - **Another agent**, by its id: `payments/ledger-lookup`, in your
   workspace or already running on the plane. One installed from the
@@ -363,8 +365,8 @@ payments/notify  plan  reads Uses: payments/ledger-lookup, npm:grammy@^1, mcp:ht
 
 ### The labels
 
-A page declares its premises with five labels and one heading, and a
-program reads them, so the same page means the same thing on every
+An agent's source declares its premises with five labels and one heading, and a
+program reads them, so the same source means the same thing on every
 plane and a mistake is refused where it stands:
 
 - `Type:` once, in the head, when the agent is not a task.
@@ -381,8 +383,8 @@ A label is spelled exactly: the capital, the colon right after the
 word, no bold. A near miss is refused with the spelling meant, so a
 typo never reads as prose: `"uses:" is not a label; did you mean
 "Uses:"`, and `## Testing` gets `did you mean "## Tests"`. A line
-inside a fenced code block is an example, never a label, so a page
-may quote another page. Everything else on the page is prose, yours;
+inside a fenced code block is an example, never a label, so a source file
+may quote another. Everything else in it is prose, yours;
 only a line of prose that happens to open with a label's own spelling
 (`Type: ` at the start of a wrapped line) reads as the label, so
 start such a sentence another way.
@@ -390,7 +392,7 @@ start such a sentence another way.
 ## The built-in agents
 
 Every plane starts with these under `cernanto/`; they are agents like
-yours, named, listed, traced and replaced the same way. A page reaches
+yours, named, listed, traced and replaced the same way. An agent reaches
 them by granting them on its `Uses:` line, by their path:
 
 - **decision** (`cernanto/decision`): a decision over your data, answered
@@ -478,7 +480,7 @@ given, so asking twice writes once.
 - Agents talk by calls. An agent that lets others wait for something
   exports a WAIT FUNCTION ("waits until a reply arrives on that thread,
   or the time given passes, and answers it"); inside a service that
-  wait is the coder's code over the service's own memory, and no event
+  wait is the coding assistant's code over the service's own memory, and no event
   travels between agents. Whether an arrival matters is a sentence the
   code checks after each wake ("only mail from that customer").
 - Waiting on a capability is an ordinary function of its interface: a
@@ -519,13 +521,14 @@ given, so asking twice writes once.
 
 You usually write nothing about testing. The compiler derives the
 tests from the spec's own prose, runs them live against the deployed
-agent, and will not ship code that fails them: every branch your spec
-states is already the test plan.
+agent, and will not ship code that fails them: what your spec states
+is the test plan, and a case that must be covered is a sentence under
+`## Tests`.
 
 Say how the agent is tested only for what the derived tests cannot
 know, and say it in one place: under a `## Tests` heading at the end
-of the page, the one home of testing sentences. What you say there
-becomes the plan: once a page says how it is tested, the tests prove
+of the source, the one home of testing sentences. What you say there
+becomes the plan: once the source says how it is tested, the tests prove
 what those sentences describe and nothing more, so name every case
 you want proved ("prove the four roads: a refund, a late order
 refused, a used item refused, an exchange handed to a person"). What
@@ -574,9 +577,9 @@ complete alone (a query, a refund in test mode) needs one account.
 Tests run your agent and its real dependencies by default. The Tests
 section's `Mocks:` line names the dependencies the tests replace with
 a mock, for one that must not perform its real actions or one whose
-response you need to control. Any agent your page grants can be
+response you need to control. Any agent your source grants can be
 replaced; an agent your agent reaches only through another agent is
-that agent's to mock, in its own page:
+that agent's to mock, in its own source:
 
 ```md
 ## Tests
@@ -585,7 +588,9 @@ Mocks: acme/erp-post
 ```
 
 That alone keeps the derived tests, with the ERP replaced by a mock the
-test session writes from the ERP's contract. Say more when a
+test session writes from the ERP's contract. A program holds each mock
+to the contract it stands for, a test that reaches the real dependency
+anyway fails, and the deployed agent has no mock. Say more when a
 controlled response needs saying:
 
 ```md
@@ -656,6 +661,58 @@ change that adds to its contract does the same; a breaking change
 recompiles the agents that use it, or goes out under a new name. One
 version of a module runs per plane.
 
+A module is called where it runs: inside a task, a service or a job
+that uses it. A worker takes no call, so a worker that uses the module
+is not one of them. To try one function, name the agent with `--in`:
+
+```
+cernanto call billing/invoice-pdf render --in billing/desk invoice:='{"number": "A-17"}'
+```
+
+The call is the desk's own, and the module runs in the desk's copy,
+with what it holds in memory there. Two agents are refused as a place
+to call it, each in words that say what to do: one that still links an
+earlier version of the module, pinned to its earlier contract, until
+it is deployed again; and one whose copy has run since before the
+plane's release could do this, which an upgrade leaves running, until
+a new version of it runs. Or call the module by itself, with no
+`--in`, when no agent uses it yet or you want it with nothing around
+it:
+
+```
+cernanto call billing/invoice-pdf render invoice:='{"number": "A-17"}'
+```
+
+The first such call starts the module by itself and says so in a
+line: it runs as one service, listed as
+`billing/invoice-pdf-standalone`, and nothing else starts it. What the
+module keeps in memory lives from one call to the next. The plane
+parks it as it parks a task: its process ends, what it held of the
+machine, a socket or a lock, goes with it, and the next call brings
+it back with its memory. To end it now, delete it:
+
+```
+cernanto delete billing/invoice-pdf-standalone
+```
+
+The delete removes its memory and the records of the calls made
+there, and the next call by itself starts it anew, empty; a deploy of
+the module empties it too. A service runs no commands, so a module
+that runs commands is called inside its task or its job. The UI does
+the same from a module's Trace tab, with `In` before the function:
+`by itself`, or one of the tasks, services and jobs that use it.
+
+A call of a module's function runs the module as it is deployed, and
+never a version before it. Made right after a deploy, it waits for the
+copy that runs what was deployed, for up to a minute, while the agent
+it runs inside rolls onto it. And `cernanto call` and the UI name the
+contract they read the arguments against: when the agent was deployed
+again in the meantime, under a contract those arguments do not fit,
+the plane refuses the call and says to read the contract again, where
+arguments shaped for one version would otherwise be taken by another.
+In the trace of the agent it ran inside, such a call is named
+`billing/invoice-pdf.render@` and a mark of the module's package.
+
 ## An interface and its family
 
 When several agents provide the same capability through different
@@ -669,13 +726,13 @@ can name a provider at run time without knowing which providers exist.
 
 Type: interface
 
-An email sending client, the contract every email provider implements.
-Two functions. send takes the recipient address, a subject and a
-plain-text body, and answers whether the message was accepted and the
-provider's reason when it was not; a refused address is a normal
-answer, never an error. waitForMailReceived waits for the next
-incoming mail, filterable by sender address and by a subject
-substring, with a timeout, and answers the mail or null.
+An email sending client. Two functions. send takes the recipient
+address, a subject and a plain-text body, and answers whether the
+message was accepted and the provider's reason when it was not; a
+refused address is a normal answer, never an error.
+waitForMailReceived waits for the next incoming mail, filterable by
+sender address and by a subject substring, with a timeout, and answers
+the mail or null.
 
 ## Tests
 
@@ -731,7 +788,7 @@ process; every other implementor is reached over the wire.
 ## Implementing an OpenAPI document
 
 When the API an agent must serve is already fixed, the document is the
-contract: the page names it on its `Implements:` line and says in one
+contract: the agent names it on its `Implements:` line and says in one
 sentence where the agent listens. `orders/orders.cern.md`, beside its
 folder `orders/orders/` holding the document:
 
@@ -750,7 +807,7 @@ document's not-found answer with the id as the problem's detail.
 
 The document becomes the contract, one function per operation named
 by its operationId, and the compile generates the server: the typed,
-documented, empty functions the coder fills, and the handler that
+documented, empty functions the coding assistant fills, and the handler that
 turns each request into a call of one of them and answers by the
 document. Nothing about paths, statuses or shapes is written anywhere:
 they are the document's. The port, the protocol, the certificate and
@@ -780,13 +837,13 @@ support-desk.cern.md: warning: this agent compiles to a large program: move part
 1 warning
 ```
 
-No sentence settles it; only a split does: a page for the part that
-moves, and a `Uses:` on the page that keeps the rest. A warning never
+No sentence settles it; only a split does: an agent for the part that
+moves, and a `Uses:` on the one that keeps the rest. A warning never
 stops the compile.
 
-A page the compile cannot plan (a use it cannot find, a label it
+An agent the compile cannot plan (a use it cannot find, a label it
 cannot read, a label spelled nearly right) ends with an `error:` line
-that names the page and the line, and the road to take beneath it:
+that names the file and the line, and the road to take beneath it:
 
 ```
 ops/mailer.cern.md:3: error: "uses:" is not a label; did you mean "Uses:"
@@ -795,7 +852,7 @@ ops/mailer.cern.md:3: error: "uses:" is not a label; did you mean "Uses:"
 ## Changing a deployed agent
 
 A compile of an agent that already runs starts from the code that
-exists, never from a blank page, and does the least the change needs:
+exists, never from scratch, and does the least the change needs:
 
 - Nothing moved (a redeploy, a reflowed paragraph): the deployed
   agent is kept, in seconds.
@@ -804,7 +861,7 @@ exists, never from a blank page, and does the least the change needs:
   the new spec.
 - The prose moved, or a dependency was granted: one judgment reads both
   specs, the diff and the code, and answers a plan of what the change
-  forces and where; the coder modifies the previous code along that
+  forces and where; the coding assistant modifies the previous code along that
   plan, and the tests are updated where the plan says they must.
 - A dependency's contract, an API document, a tool listing or a
   package version moved: the previous code is re-checked against the
@@ -818,9 +875,72 @@ is when a recompile is worth it. A compile does the same work and stops
 before the ship, for a package you want in the tree before anything
 runs.
 
+An agent runs from its deploy and is removed by its delete; nothing
+is started or stopped by hand. The one thing you can ask of a program
+that runs is to start again from the top, with no change and no
+deploy:
+
+```
+cernanto restart billing/ledger
+```
+
+A new version of the same code takes over: a service's memory starts
+over, a job's too, and a worker's program runs again. What the old
+process held, a socket or a lock, goes with it. A task keeps nothing
+between calls, so there is nothing of it to start again. What becomes
+of the calls the old version holds is what any new version does to
+them:
+[Deploying over running work](RUNTIME-AND-GUARANTEES.md#deploying-over-running-work).
+
+## Traces: on, debug or off
+
+Every call of an agent is traced: what it was asked, each call it made
+with what it handed over and what it got back, the lines it printed
+and what it answered. `cernanto trace <id>` reads the latest call as a
+conversation. The code a compile writes also notes each operation with
+its data, as debug lines, and a normal run prints none of them.
+
+An agent's traces stand at one of three, each set by a command of its
+own:
+
+- `on`, where a deployed agent starts: its calls are stored as above.
+  `cernanto traces billing/invoices on` sets it.
+- `debug`: the same, with the debug lines.
+  `cernanto traces billing/invoices debug` sets it. `--debug` on
+  `cernanto trace` and `cernanto call` shows the lines, and the UI's
+  Trace tab shows them while the agent stands at debug.
+- `off`: nothing of its calls is stored.
+  `cernanto traces billing/invoices off` sets it.
+
+`cernanto traces` with no agent changes nothing: it lists what every
+agent stands at.
+
+A change starts the agent again as a new version, with no deploy: a
+service's memory starts over, and a worker's program runs again
+([Deploying over running work](RUNTIME-AND-GUARANTEES.md#deploying-over-running-work)
+says what becomes of the calls the old version holds). The
+new setting is in effect once that version serves: until then the
+version that runs stores as before, and an agent that cannot start
+again keeps what it has until it is deployed again. A
+module is `on` or `off`; its debug lines are stored where an agent
+that uses it stands at debug, and a change of it starts the agents
+that use it. The UI sets the same in an agent's Settings tab, under
+Traces. A deploy keeps what was set, and a delete forgets it.
+
+The call totals and the active calls of `cernanto ls` are counted
+under all three. Off keeps no value private: an agent that calls one
+whose traces are off still stores what it sent it and what it
+answered. The plane's own agents, the ones its release installs, stand
+at off unless you set them, so a trace ends at the call your agent
+made of them; turn one on (`cernanto traces cernanto/gateway on`) to
+read what it did from then on. A few of them start at on, since the
+plane reads their records back: the compiler (`cernanto/compile`), the
+language-model agent (`cernanto/llm`) and the decision agents (under
+`cernanto/decision/`).
+
 ## License and copyright
 
-A page states its terms with two labels, usually last, under an
+An agent states its terms with two labels, usually last, under an
 optional `## License` heading:
 
 ```md
@@ -842,7 +962,7 @@ payments/recovery  plan  reads License: MIT
 payments/recovery  plan  reads Copyright: 2026 Acme Payments Ltd
 ```
 
-Nothing about them reaches the coder: the labels are no part of what
+Nothing about them reaches the coding assistant: the labels are no part of what
 any session sees. They ride into the `.cern` package's manifest
 as `license` and `copyright`, and the public registry refuses to
 publish a package that states no license. The license of a package

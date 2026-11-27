@@ -2,6 +2,7 @@ packages:
   - runtime/*
   - format
   - cli
+  - ui
 # The security floors: the gateway client's generator pins js-yaml
 # 4.2.0 exactly, below the patched release, and the linter's parser
 # asks for minimatch 10, every release of which is below the patched

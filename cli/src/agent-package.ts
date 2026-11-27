@@ -23,9 +23,9 @@ import { RegistryClient, fetchPackage, registryEndpoints, resolveInIndex } from 
 import type { ResolvedPackage } from './registry.js';
 import { ServerClient } from './server-client.js';
 
-// The agent or package the reading verbs name (`contract`, `code` and
-// `tests`): one argument shape, resolved in the deploy's order. A path
-// to a `.cern` file is that file, a name with a version is the
+// The agent or package the reading verbs name (`contract`, `compiled`
+// and `tests`): one argument shape, resolved in the deploy's order. A
+// path to a `.cern` file is that file, a name with a version is the
 // registry's, an id is the agent the plane runs, else the package of
 // that id in the tree, else the registry's package of that name.
 
@@ -236,10 +236,10 @@ export function folderFiles(pkg: CernPackage, folder: WrittenFolder): [string, s
 }
 
 /**
- * What `code` and `tests` print: one folder of the package an argument
- * names, each file under a heading with its path in the package, or as
- * json each file's text by its path. A folder that holds no file
- * prints the words the verb gives for it.
+ * What `compiled` and `tests` print: one folder of the package an
+ * argument names, each file under a heading with its path in the
+ * package, or as json each file's text by its path. A folder that
+ * holds no file prints the words the verb gives for it.
  *
  * @param target - The argument as given.
  * @param folder - The folder to print.

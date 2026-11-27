@@ -94,23 +94,7 @@ The compiler, parser, control plane, gateway, trace reader and credential-custod
 
 Start with [`cernanto/compile.cern.md`](../cernanto/compile.cern.md). It describes the compiler in the same language used by application agents, and composes other agents through their contracts. The compiler can compile its next version through the same gates and live tests.
 
-The language runtime, process package, package-format kit and CLI are handwritten. This is a concrete use of the language for its own platform, rather than a claim that every part of the repository was generated.
-
-### The platform in numbers
-
-The committed `cernanto/` tree measured on **17 November 2026** contains:
-
-| Material                      |  Count |
-| ----------------------------- | -----: |
-| English agent specifications  |     65 |
-| Lines in those specifications | 16,456 |
-| Matching compiled packages    |     65 |
-| Lines of generated TypeScript | 56,698 |
-| Lines of generated tests      | 28,776 |
-
-The source count includes every `.cern.md` file under `cernanto/`. The generated counts include `.ts` files inside the packages' `code/` and `tests/` folders, excluding `.d.ts` declaration files. All counts include blank lines. Handwritten runtime, process-package, package-format and CLI code is outside these totals.
-
-These are a dated snapshot, not an estimate that updates automatically. The README rounds them to the nearest hundred lines. The specifications and packages are the inspectable evidence: the compiler agents' implementations are generated from their English source.
+The language runtime, process package, package-format kit and CLI are handwritten. This is a concrete use of the language for its own platform, rather than a claim that every part of the repository was generated. The specifications and packages are the inspectable evidence: the compiler agents' implementations are generated from their English source.
 
 ## Fit and direction
 

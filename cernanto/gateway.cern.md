@@ -2,7 +2,7 @@
 
 Implements: openapi:./gateway/openapi.yaml
 
-Uses: cernanto/trace/view, cernanto/controller, cernanto/compile, cernanto/auth, cernanto/trace, cernanto/config, cernanto/packages, cernanto/documents, npm:fs-extra, npm:@prometheus-io/client
+Uses: cernanto/trace/view, cernanto/controller, cernanto/compile, cernanto/auth, cernanto/trace, cernanto/config, cernanto/packages, cernanto/documents, cernanto/ui, npm:fs-extra, npm:@prometheus-io/client
 
 The plane's public API: outside callers speak the document's
 operations here, and the document says what each takes, answers and
@@ -59,19 +59,140 @@ answers once the pass is on its way, and the pass outlives it.
 
 ## Behind the operations
 
-- `invoke` refuses an id nothing is deployed as and a module in the
-  document's words: a module's composing agents are those whose newest
-  generation composes it, a tester among them only when no other does.
+- `invoke` refuses an id nothing is deployed as in the document's
+  words. A CALL IS REFUSED WHERE THE CONTRACT IT WAS PREPARED AGAINST
+  IS NOT THE ONE DEPLOYED: a body's `contractSha` is the sha256 hex of
+  the contract text its arguments were read against, and the row the
+  request names fits it when the sha256 hex of the row's `contract`
+  text (an absent one hashing as the empty text) equals it, by that
+  equality alone: a call's arguments ride under their parameters'
+  names, so a contract of any other text is another contract to a
+  call, whatever the row says it is compatible with; a body whose
+  `contractSha` the row does not fit is answered the document's 409,
+  in its words, before anything else of the row is judged. It is
+  judged against the row the request names, whatever its kind. A MODULE IS
+  CALLED WHERE IT RUNS: a module's function is
+  called inside an agent that links the module, the one the body's
+  `in` names, else the module's standalone agent, as one call of that
+  agent's function named `<the module's id>.<function>@<the mark>`,
+  under the
+  body's key and with the body's arguments, answered as it answers.
+  THE MARK is the first twelve characters of the hex of the module's
+  row's `artifact`, the ones after its `sha256:`. An agent answers a
+  module's function under the mark of the package it links the module
+  from, so a copy that links another package of the module than the
+  one deployed has no function of that name, and refuses the call at
+  its dispatch, before anything of it runs. A
+  module's composing agents are the fleet's agents whose newest
+  generation composes it (an agent that left the fleet is none, while
+  its generation drains), a verification pair's agents aside: an agent
+  whose row carries the form `test` or `tester` is the compile's own,
+  told by that form alone and never by its name, and is no place to
+  call a module. Its standalone agent is the fleet's agent
+  `<the module's id>-standalone` whose `form` is `standalone` and whose
+  `target` is the module, from the moment it is on the fleet, whatever
+  generations it has yet: it is one of the composing agents, and a
+  call made before its copy serves waits for it, as a call of any
+  agent being deployed does. THE MODULE'S GATE refuses in the document's words,
+  the first of these that holds: a function the module's row does not
+  list, as any agent's (the 404, with the module's id); with `in`, an
+  agent that is not among
+  the composing agents, then one whose type is `worker`, then one whose
+  own row's `composition`, the pinned one a row carries beside what the
+  document names, maps the module to another artifact than the
+  module's row carries (the plane pins every agent that fits the
+  module to it as deployed, in the write that deploys it, so such an
+  agent is held to an earlier contract of the module, and arguments
+  read against the module as it stands would be taken wrong there; an
+  agent whose row is pinned to the module as deployed is a place to
+  call it whatever its generations compose yet). An `in` on an agent that is
+  neither a module nor an interface is refused in the document's
+  words. A MODULE CALLED WITH NO `in` RUNS BY ITSELF, AND IS STARTED
+  WHEN IT IS NOT: where the body names no `in` and the module has no
+  standalone agent on the fleet, the module is started by itself
+  first, which answers its standalone agent's id and whether this ask
+  put it on the fleet (another request may have started it a moment
+  before, and that is an answer, never a refusal); a start that is
+  refused, a failure of the kind `terminal`, is answered the
+  document's 400 in the refusal's own words, and a start that fails
+  in any other way is answered the document's 503 as for a target
+  that is unavailable, in the failure's words; either way nothing is
+  called. The call is then that standalone agent's,
+  made as for a module that was started, and waits for its copy. A
+  request whose own ask put the standalone agent on the fleet says so
+  beside what it answers: `started`, the standalone agent's id, in the
+  answer of `invoke` and in the `accepted` event of `invokeStream`,
+  absent from every other answer. A COPY THAT HAS NOT THE FUNCTION: when the call of a module's
+  function, made with `in` or without, fails with the kind
+  `contract-violation` and exactly the words `agent "<the agent
+  called>" has no handler "<the name called>"`, the copy that took it
+  refused it at its dispatch and nothing of it ran. Every other
+  failure is the function's own, whatever its kind and whatever agent
+  its words name (a function that ran and called a function another
+  agent has not fails in words of the same form), and is answered as
+  it is. After such a refusal read the fleet again and pass the gate
+  again, since the module may have been deployed again meanwhile and
+  the name is made from its row as it stands; where the gate then
+  chooses another call than the one refused (another name, another
+  agent, or the named agent's own function, the module having become
+  another kind), that call is made in its place, at once. Otherwise
+  THE AGENT CALLED IS ROLLING once a read of the fleet made for this
+  request, the one before its first call among them, listed a
+  generation of it that composes the module under another artifact
+  than the module's row carries, or listed no generation of it: the
+  copy that refused was of a generation listed before the call, which
+  may have left the fleet by the read after it. While it is rolling
+  make the call again under the
+  same key, every 300 milliseconds for up to sixty seconds from the
+  request's start, as for a target that is unavailable, and answer the
+  document's 503 as for one when they end: a copy that links the
+  package deployed takes the call once it serves. And when it is not
+  rolling, every generation the fleet listed for the agent called at
+  every such read composing the module
+  under the artifact the module's row carries, no copy of it will have
+  the function, as a copy started by an earlier release of the plane
+  has none of its modules' (an upgrade leaves such copies running):
+  answer the document's 400 for it at once, in its words, the
+  standalone agent's own where the agent called is the module's
+  standalone agent. WHICH AGENT IS THE MODULE'S STANDALONE AGENT IS
+  SAID BY ITS ROW, NEVER BY ITS ID: the row whose `form` is
+  `standalone` and whose `target` is the module, as above. An agent of
+  the reader's own may be named `<the module's id>-standalone` and
+  link the module like any agent: named with `in`, it is called and
+  judged like any agent that links the module, and where its copy has
+  not the function the words are an agent's (a new generation of it
+  answers), never the standalone agent's, which tell the reader to
+  delete it.
   An interface is called through its default implementor, the one the
   plane binds to it, asked of cernanto/config as the runtime asks it
   for a consumer that names none: the call is that implementor's,
-  judged by the same gate and answered as it answers, and an interface
+  judged by the same gate, the body's `in` with it, and answered as it
+  answers, and an interface
   with no default is refused in the document's words, which name its
-  implementors and end there. The gate is skipped when the fleet
-  cannot be read. Its `callId` is the id of the call's request, the
+  implementors and end there. AN IMPLEMENTOR TAKES A PREPARED CALL AT
+  THE INTERFACE'S CONTRACT IT IMPLEMENTS: its row's `implements`
+  carries an entry whose `id` is the interface and whose `contractSha`
+  is the sha256 hex of the interface's contract it was compiled
+  against; where the body names `contractSha` and that entry's
+  `contractSha` is not the body's, or the row carries no entry for
+  the interface, answer the document's 400 for it, in its words, and
+  call nothing: the interface was deployed again and its implementor
+  still reads the arguments of the contract before. The entry is read
+  off the implementor's row in the very reading of the fleet its own
+  gate is passed on, the one whose row names the package the call is
+  made under: a row read before it may be of a package the implementor
+  runs no more. The gate is skipped when the fleet
+  cannot be read: the call is the named agent's own function then. A
+  body that names `in` or `contractSha` is answered the document's 503
+  then, in its words for it: a module's function is named from the
+  module's row, and neither can be judged without the fleet. Its
+  `callId` is the id of the call's request, the
   `requestId` the language's `invoke` answers beside the call's id,
   under which the request's records are kept. `invokeStream` passes
-  the same gate first.
+  the same gate first, and makes and follows the call the gate chose,
+  by the same rules: a copy's refusal at its dispatch comes before any
+  copy accepted the call, so the call is made again, or answered in
+  the document's status, before the stream opens.
 - `land` asks the controller once with every target the body names,
   however many there are, so they land together as one landing.
 - `ls` answers the controller's listing with the calls each agent's
@@ -81,12 +202,20 @@ answers once the pass is on its way, and the pass outlives it.
   commit because a slice is missing (a removal of the digest moved the
   number its next commit takes while the slices were put), the slices
   are put again and the commit is asked once more.
+- `packageFile` answers the text of the one entry the query names in
+  the package, asked of the warehouse as one entry and never as the
+  package whole: the warehouse's refusal of a name is the document's
+  400 in its words, and a package or an entry it does not hold is the
+  document's not-found answer.
 - `healthz` probes the plane's records by asking config for this agent's own setting `port`; an answer,
   a value or none,
   is a healthy plane.
-- `cancel` asks the language's own cancel for the call named, a
-  request's id first turned into its call's id with the view module,
-  and answers `{ok: true}`, whether a process holding it was reached
+- `cancel` asks the language's own cancel for the call named. A
+  linked call's id (one with `~`) names the request it ran inside, the
+  id before its first `~`: a module's function runs inside another
+  agent's call, which is the call a process holds and the one that
+  ends. A request's id is then turned into its call's id with the view
+  module. It answers `{ok: true}`, whether a process holding it was reached
   or the call had ended; a cancel of a compile's call (a call whose
   key begins `k-compile-`) is followed by one controller pass, asked by
   an awaited invoke that does not wait for the answer (`wait: false`),
@@ -122,6 +251,15 @@ answers once the pass is on its way, and the pass outlives it.
   with its servers rewritten to this listener's scheme and the host the
   request came through.
 
+## The UI's files
+
+`uiDocument` answers the web UI's document, `uiScript` a script of
+the web UI by its name and `uiStylesheet` a stylesheet of it by its
+name, each as its text, asked for at each request. A name that has a
+file is answered with the file's text; every other name is the
+document's not-found answer. `uiDocument` judges the request's
+`sec-fetch-dest` before it asks for anything.
+
 ## Streams
 
 A stream tells a request's records as they are made, from the copy
@@ -143,7 +281,9 @@ host in brackets), the headers `content-type: application/json`,
 (`copies/<port>/<n>`, which the record itself does not carry) and
 `x-cernanto-epoch` its epoch, and the body `{callId}`, a request's id, or `{}` for everything
 the copy runs. While the copy serves, it answers newline-delimited
-JSON: a first line `{open: true}`, then a line per record the copy made
+JSON: a first line `{open: true}`, which carries as `traces` what the
+traces of the copy's agent stand at (`on`, `debug` or `off`) where the
+copy says it, then a line per record the copy made
 that is not stored yet, then a line per record as the copy makes it,
 and the line `{fact: 'over', callId, status, error?}` when a request is
 over; a linked call (an id with `~`) keeps no such line of its own,
@@ -194,7 +334,10 @@ tell what is new, and end.
 `invokeStream` makes the call with the language's `invoke`: once a copy
 took the call, the event `{accepted: {callId}}` with the request's id,
 then the request followed from the copy that took it, each record an
-event `{record}` (with `lines` under a view). The call's answer ends
+event `{record}` (with `lines` under a view). A copy whose stream's
+first line says `traces: 'off'` keeps no record of the request: the
+follow ends at that line, nothing more is read for it, and the stream
+ends with the answer the moment `invoke` answers. The call's answer ends
 the follow, whatever its records say and never a summary's status (a
 secret's call keeps no records and is never over in them; a call
 between two attempts reads `error` and is not over): once `invoke` answered, the follow goes on
@@ -302,7 +445,19 @@ listed: <why>`.
 ## Tests
 
 The API binds real ports and forwards to the live plane, so the tests
-exercise `describe`; the plane's own tier proves the surface.
+exercise what changes nothing on it: `describe`, the reads, and the
+refusals of the operations, each in the document's status and words.
+What the operator keeps on the plane is theirs and secret: no test
+asks for a setting or an account or lists them, and no test's words
+of a failure carry one.
+A call of a function a module has, made with no `in`, starts that
+module by itself on the plane the tests run on, so no test makes
+one, and no test expects a module started: a module's gate is
+exercised by its refusals alone, a function the module has not (the
+404, which comes before every other refusal of the gate), and an `in`
+that is refused, asked with a function the module's row lists, read
+from `describe` when the test runs. The plane's own tier proves the
+rest of the surface.
 
 ## License
 

@@ -4,7 +4,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client/index.js';
-import type { AgentDeleteData, AgentDeleteErrors, AgentDeleteResponses, AgentsData, AgentsErrors, AgentsResponses, AgentStartData, AgentStartErrors, AgentStartResponses, AuthListData, AuthListErrors, AuthListResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutErrors, AuthLogoutResponses, CallData, CallErrors, CallResponses, CallsData, CallsErrors, CallsResponses, CallsStreamData, CallsStreamErrors, CallsStreamResponse, CallsStreamResponses, CallStreamData, CallStreamErrors, CallStreamResponse, CallStreamResponses, CancelData, CancelErrors, CancelResponses, CompileData, CompileErrors, CompileProgressData, CompileProgressErrors, CompileProgressResponses, CompileResponses, ConfigGetData, ConfigGetErrors, ConfigGetResponses, ConfigListData, ConfigListErrors, ConfigListResponses, ConfigSetData, ConfigSetErrors, ConfigSetResponses, DeployData, DeployErrors, DeployResponses, DescribeData, DescribeErrors, DescribeResponses, DrainHostData, DrainHostErrors, DrainHostResponses, HarnessSetData, HarnessSetErrors, HarnessSetResponses, HarnessViewData, HarnessViewErrors, HarnessViewResponses, HealthzData, HealthzErrors, HealthzResponses, HistoryData, HistoryErrors, HistoryResponses, InvokeData, InvokeErrors, InvokeResponses, InvokeStreamData, InvokeStreamErrors, InvokeStreamResponse, InvokeStreamResponses, LandData, LandErrors, LandResponses, LsData, LsErrors, LsResponses, MetricsData, MetricsErrors, MetricsResponses, OauthCallbackData, OauthCallbackErrors, OauthCallbackResponses, OpenapiDocumentData, OpenapiDocumentErrors, OpenapiDocumentResponses, PackageExistsData, PackageExistsErrors, PackageExistsResponses, PackageGetData, PackageGetErrors, PackageGetResponses, PackagePutData, PackagePutErrors, PackagePutResponses, TokenCreateData, TokenCreateErrors, TokenCreateResponses, TokenListData, TokenListErrors, TokenListResponses, TokenRevokeData, TokenRevokeErrors, TokenRevokeResponses, UpgradeData, UpgradeErrors, UpgradeResponses } from './types.gen.js';
+import type { AgentDeleteData, AgentDeleteErrors, AgentDeleteResponses, AgentsData, AgentsErrors, AgentsResponses, AgentStartData, AgentStartErrors, AgentStartResponses, AgentTracesData, AgentTracesErrors, AgentTracesResponses, AuthListData, AuthListErrors, AuthListResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutErrors, AuthLogoutResponses, CallData, CallErrors, CallResponses, CallsData, CallsErrors, CallsResponses, CallsStreamData, CallsStreamErrors, CallsStreamResponse, CallsStreamResponses, CallStreamData, CallStreamErrors, CallStreamResponse, CallStreamResponses, CancelData, CancelErrors, CancelResponses, CompileData, CompileErrors, CompileProgressData, CompileProgressErrors, CompileProgressResponses, CompileResponses, ConfigGetData, ConfigGetErrors, ConfigGetResponses, ConfigListData, ConfigListErrors, ConfigListResponses, ConfigSetData, ConfigSetErrors, ConfigSetResponses, DeployData, DeployErrors, DeployResponses, DescribeData, DescribeErrors, DescribeResponses, DrainHostData, DrainHostErrors, DrainHostResponses, HarnessSetData, HarnessSetErrors, HarnessSetResponses, HarnessViewData, HarnessViewErrors, HarnessViewResponses, HealthzData, HealthzErrors, HealthzResponses, HistoryData, HistoryErrors, HistoryResponses, InvokeData, InvokeErrors, InvokeResponses, InvokeStreamData, InvokeStreamErrors, InvokeStreamResponse, InvokeStreamResponses, LandData, LandErrors, LandResponses, LsData, LsErrors, LsResponses, MetricsData, MetricsErrors, MetricsResponses, OauthCallbackData, OauthCallbackErrors, OauthCallbackResponses, OpenapiDocumentData, OpenapiDocumentErrors, OpenapiDocumentResponses, PackageExistsData, PackageExistsErrors, PackageExistsResponses, PackageFileData, PackageFileErrors, PackageFileResponses, PackageGetData, PackageGetErrors, PackageGetResponses, PackagePutData, PackagePutErrors, PackagePutResponses, TokenCreateData, TokenCreateErrors, TokenCreateResponses, TokenListData, TokenListErrors, TokenListResponses, TokenRevokeData, TokenRevokeErrors, TokenRevokeResponses, UiDocumentData, UiDocumentErrors, UiDocumentResponses, UiScriptData, UiScriptErrors, UiScriptResponses, UiStylesheetData, UiStylesheetErrors, UiStylesheetResponses, UpgradeData, UpgradeErrors, UpgradeResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -75,7 +75,7 @@ export const agents = <ThrowOnError extends boolean = false>(options?: Options<A
 });
 
 /**
- * Undeploys one agent and its tester; refused while deployed agents depend on it unless forced.
+ * Undeploys one agent and its tester, and with a module the module started by itself; refused while deployed agents depend on it unless forced.
  */
 export const agentDelete = <ThrowOnError extends boolean = false>(options: Options<AgentDeleteData, ThrowOnError>): RequestResult<AgentDeleteResponses, AgentDeleteErrors, ThrowOnError> => (options.client ?? client).delete<AgentDeleteResponses, AgentDeleteErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -95,7 +95,7 @@ export const describe = <ThrowOnError extends boolean = false>(options: Options<
 /**
  * Calls one exported function of a deployed agent and waits for its answer, for as long as it works.
  *
- * The row gate (an id nothing is deployed as: 404; a module is never served, and an interface is served by its default implementor, the gate judging that id, or refused when it has none: 400), then one call under the body's idempotency key, waited for until it answers. A target-unavailable failure (a deploy still converging) repeats the call every 300 milliseconds for up to sixty seconds before answering 503.
+ * The row gate (an id nothing is deployed as: 404; a module's function is called inside an agent that links the module, the one the body's `in` names, else by itself, in the module's standalone agent, which this call starts when the module is not started by itself; an interface is served by its default implementor, the gate judging that id, or refused when it has none: 400), then one call under the body's idempotency key, waited for until it answers. A target-unavailable failure (a deploy still converging) repeats the call every 300 milliseconds for up to sixty seconds before answering 503. A module's function is taken by a copy that links the module's package as deployed and by no other: while the agent called is rolling onto that package, a copy that still links the one before refuses the call before anything of it runs, and the call is repeated the same way until a copy that links it takes it.
  */
 export const invoke = <ThrowOnError extends boolean = false>(options: Options<InvokeData, ThrowOnError>): RequestResult<InvokeResponses, InvokeErrors, ThrowOnError> => (options.client ?? client).post<InvokeResponses, InvokeErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -123,12 +123,29 @@ export const invokeStream = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
- * Starts an agent's program again: a new version of the same code runs it from the top.
+ * Starts an agent's program again: a new version of the same code runs it from the top, with an empty memory.
+ *
+ * A worker's, a service's or a job's program runs again, and what its process held goes with it. A task keeps nothing between calls and has no program to start again. A module has none of its own either: a call of a module that names no `in` starts it by itself, and the delete of its standalone agent, `<the module's id>-standalone`, ends that.
  */
 export const agentStart = <ThrowOnError extends boolean = false>(options: Options<AgentStartData, ThrowOnError>): RequestResult<AgentStartResponses, AgentStartErrors, ThrowOnError> => (options.client ?? client).post<AgentStartResponses, AgentStartErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v1/agents/{agentId}/start',
     ...options
+});
+
+/**
+ * Sets what an agent's traces stand at: on, debug or off. The agent starts again as a new version, and a module's change starts the agents that link it.
+ *
+ * `on` stores each call with its details and the console's lines, `debug` the same with the agent's debug lines, `off` nothing; the call totals and the active calls are counted under every value. A module is `on` or `off`. The answer names the agents that start again for the change.
+ */
+export const agentTraces = <ThrowOnError extends boolean = false>(options: Options<AgentTracesData, ThrowOnError>): RequestResult<AgentTracesResponses, AgentTracesErrors, ThrowOnError> => (options.client ?? client).post<AgentTracesResponses, AgentTracesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/agents/{agentId}/traces',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -177,7 +194,7 @@ export const callStream = <ThrowOnError extends boolean = false>(options: Option
 });
 
 /**
- * Ends a call: the process holding it is asked to end it.
+ * Ends a call: the process holding it is asked to end it. The id of a module's call inside an agent ends the agent's call it runs inside.
  */
 export const cancel = <ThrowOnError extends boolean = false>(options: Options<CancelData, ThrowOnError>): RequestResult<CancelResponses, CancelErrors, ThrowOnError> => (options.client ?? client).post<CancelResponses, CancelErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -262,6 +279,15 @@ export const packagePut = <ThrowOnError extends boolean = false>(options: Option
 export const packageExists = <ThrowOnError extends boolean = false>(options: Options<PackageExistsData, ThrowOnError>): RequestResult<PackageExistsResponses, PackageExistsErrors, ThrowOnError> => (options.client ?? client).get<PackageExistsResponses, PackageExistsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v1/packages/{digest}/exists',
+    ...options
+});
+
+/**
+ * One file of a package the plane holds, as text: its source, its code, its tests, its contract, or its manifest, which names the rest.
+ */
+export const packageFile = <ThrowOnError extends boolean = false>(options: Options<PackageFileData, ThrowOnError>): RequestResult<PackageFileResponses, PackageFileErrors, ThrowOnError> => (options.client ?? client).get<PackageFileResponses, PackageFileErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/packages/{digest}/file',
     ...options
 });
 
@@ -397,3 +423,18 @@ export const openapiDocument = <ThrowOnError extends boolean = false>(options?: 
     url: '/v1/openapi.json',
     ...options
 });
+
+/**
+ * The web UI's document, as the release this plane runs from carries it. The UI's files hold nothing of the plane, so they are open paths; what a reader does in the UI is admitted operation by operation.
+ */
+export const uiDocument = <ThrowOnError extends boolean = false>(options?: Options<UiDocumentData, ThrowOnError>): RequestResult<UiDocumentResponses, UiDocumentErrors, ThrowOnError> => (options?.client ?? client).get<UiDocumentResponses, UiDocumentErrors, ThrowOnError>({ url: '/', ...options });
+
+/**
+ * One of the web UI's scripts, by the name the UI's document gives it.
+ */
+export const uiScript = <ThrowOnError extends boolean = false>(options: Options<UiScriptData, ThrowOnError>): RequestResult<UiScriptResponses, UiScriptErrors, ThrowOnError> => (options.client ?? client).get<UiScriptResponses, UiScriptErrors, ThrowOnError>({ url: '/ui/js/{file}', ...options });
+
+/**
+ * One of the web UI's stylesheets, by the name the UI's document gives it.
+ */
+export const uiStylesheet = <ThrowOnError extends boolean = false>(options: Options<UiStylesheetData, ThrowOnError>): RequestResult<UiStylesheetResponses, UiStylesheetErrors, ThrowOnError> => (options.client ?? client).get<UiStylesheetResponses, UiStylesheetErrors, ThrowOnError>({ url: '/ui/css/{file}', ...options });

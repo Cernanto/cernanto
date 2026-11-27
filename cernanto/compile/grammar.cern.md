@@ -2,7 +2,7 @@
 
 Type: module
 
-A module, linked into the agents that use it. Read a page the way the
+Read a page the way the
 machine reads it, in one scan: the labels that declare its premises,
 the grants, the prose and the Tests section, with fenced code tracked
 first, and answer either the validated shape or every problem found,

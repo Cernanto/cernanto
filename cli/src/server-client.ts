@@ -19,6 +19,7 @@ import type {
   AgentRow,
   AgentsResult,
   AgentStartResult,
+  AgentTracesResult,
   CancelResponse,
   CompileRequest,
   GenerationRow,
@@ -127,6 +128,32 @@ export function recordsAsTheyHappened(records: TraceRecord[]): number[] {
         left.index - right.index,
     )
     .map((placed) => placed.index);
+}
+
+/** What a call names beside its arguments. */
+export interface CallBeside {
+  /** For a module's function: the agent to run it inside. */
+  in?: string;
+  /** The contract the arguments were read against, the sha256 hex of
+   * its text: the plane refuses the call when the agent was deployed
+   * again since under a contract this one does not fit. */
+  contractSha?: string;
+}
+
+/** What a caller hears beside a call's answer. */
+export interface CallHeard {
+  /** Hears the module's standalone agent when this call started the
+   * module by itself: the plane says so, and nothing is guessed. */
+  onStarted?: (standaloneId: string) => void;
+}
+
+/** The fields of a call's body that stand beside its arguments, each
+ * present where the call names it. */
+function besideArgs(call: CallBeside): CallBeside {
+  return {
+    ...(call.in === undefined ? {} : { in: call.in }),
+    ...(call.contractSha === undefined ? {} : { contractSha: call.contractSha }),
+  };
 }
 
 /** The words a stream's refusal carries: the plane's own when it
@@ -261,8 +288,15 @@ export class ServerClient {
   }
 
   /** Calls one exported function and answers its result. */
-  async invoke(agentId: string, fn: string, args: unknown): Promise<unknown> {
-    return (await this.invokeCall(agentId, fn, args)).result;
+  async invoke(
+    agentId: string,
+    fn: string,
+    args: unknown,
+    options: CallBeside & CallHeard = {},
+  ): Promise<unknown> {
+    const answer = await this.invokeCall(agentId, fn, args, options);
+    if (answer.started !== undefined) options.onStarted?.(answer.started);
+    return answer.result;
   }
 
   /** Calls one exported function and answers the result with the
@@ -272,16 +306,21 @@ export class ServerClient {
     agentId: string,
     fn: string,
     args: unknown,
-  ): Promise<{ result: unknown; callId?: string }> {
+    options: CallBeside = {},
+  ): Promise<{ result: unknown; callId?: string; started?: string }> {
     const body = unwrap(
       await gateway.invoke({
         client: this.gateways.longHaul,
         path: { agentId, function: fn },
-        body: { args },
+        body: { args, ...besideArgs(options) },
       }),
       `/v1/agents/${enc(agentId)}/invoke/${enc(fn)}`,
     );
-    return { result: body.result, callId: body.callId };
+    return {
+      result: body.result,
+      callId: body.callId,
+      ...(body.started === undefined ? {} : { started: body.started }),
+    };
   }
 
   /**
@@ -303,7 +342,8 @@ export class ServerClient {
       utc?: boolean;
       onAccepted?: (callId: string) => void;
       onRecord?: (record: TraceRecord, lines?: string[]) => void;
-    },
+    } & CallBeside &
+      CallHeard,
   ): Promise<{ result: unknown; callId?: string }> {
     const query = new URLSearchParams();
     if (options.view !== undefined) {
@@ -317,7 +357,7 @@ export class ServerClient {
     const path = `/v1/agents/${enc(agentId)}/invoke/${enc(fn)}/stream`;
     const response = await planeFetch(this.plane, `${this.plane.baseUrl}${path}${suffix}`, {
       longHaul: true,
-      json: { args },
+      json: { args, ...besideArgs(options) },
     });
     if (!response.ok) {
       const text = await response.text().catch(() => '');
@@ -347,6 +387,7 @@ export class ServerClient {
         const event = JSON.parse(frame.slice(6)) as InvokeStreamEvent;
         if (event.accepted !== undefined) {
           callId = event.accepted.callId;
+          if (event.accepted.started !== undefined) options.onStarted?.(event.accepted.started);
           options.onAccepted?.(callId);
         } else if (event.record !== undefined) {
           options.onRecord?.(event.record, event.lines);
@@ -370,8 +411,8 @@ export class ServerClient {
     });
   }
 
-  /** Starts an agent's program: a new version of the same code runs
-   * it from the top. */
+  /** Starts an agent's program again: a new version of the same code
+   * runs it from the top, with an empty memory. */
   async agentStart(agentId: string): Promise<AgentStartResult> {
     return unwrap(
       await gateway.agentStart({
@@ -381,6 +422,19 @@ export class ServerClient {
       `/v1/agents/${enc(agentId)}/start`,
     );
   }
+
+  /** Sets what an agent's traces stand at: on, debug or off. */
+  async agentTraces(agentId: string, traces: 'on' | 'debug' | 'off'): Promise<AgentTracesResult> {
+    return unwrap(
+      await gateway.agentTraces({
+        client: this.gateways.client,
+        path: { agentId },
+        body: { traces },
+      }),
+      `/v1/agents/${enc(agentId)}/traces`,
+    );
+  }
+
   /** Which package ran when, newest first. */
   async history(agent?: string): Promise<HistoryEntry[]> {
     return unwrap(

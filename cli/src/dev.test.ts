@@ -33,6 +33,7 @@ import {
   startBoxWhenNeeded,
   startNativeDev,
   stopNativeDev,
+  upWords,
 } from './dev.js';
 import { planeFetch, whenLoopbackDown } from './gateway-client.js';
 import { homeEnvironment } from './programs.js';
@@ -799,4 +800,18 @@ test("the release's packages land from the real folder behind a view's linked tr
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('a plane that is up is told with its address, its UI and how it is parked', () => {
+  assert.deepEqual(upWords({ baseUrl: 'http://127.0.0.1:7434', token: undefined }), [
+    'the local plane is up: http://127.0.0.1:7434',
+    'open its UI in a browser: http://127.0.0.1:7434/ (or: cernanto ui)',
+    'park it with: cernanto dev down',
+  ]);
+  // A plane on another port names that port in both lines.
+  const [up, ui] = upWords({ baseUrl: 'http://127.0.0.1:8123', token: 'cern_op_token' });
+  assert.equal(up, 'the local plane is up: http://127.0.0.1:8123');
+  assert.equal(ui, 'open its UI in a browser: http://127.0.0.1:8123/ (or: cernanto ui)');
+  // A script that waits for the plane reads the first line by these words.
+  assert.match(up, /^the local plane is up: /);
 });

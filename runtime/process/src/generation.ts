@@ -33,16 +33,19 @@ export interface GenerationFacts {
   /** The form the package is materialized in: `test`, the package
    * itself with its tests' mocks linked in place of the mocked edges
    * at every depth of the composition; `tester`, the package's tests
-   * as a task with one function `run`. Absent, the package as itself. */
-  form?: 'test' | 'tester' | undefined;
+   * as a task with one function `run`; `standalone`, a module's
+   * package as a service with no function of its own that links the
+   * module. Absent, the package as itself. */
+  form?: 'test' | 'tester' | 'standalone' | undefined;
   /** The pair's other id. For a tester: the id its tests call, the
    * target's test form served apart, or, for a module target, the id
    * the tester links the module under (its test-form row, composed
    * into the tester). For a test form: the agent it stands for, the id
    * it calls its dependencies as. */
   testOf?: string | undefined;
-  /** For either form: the canonical id of the agent the pair verifies,
-   * which the process states on every call it makes. */
+  /** For either form of a pair: the canonical id of the agent the pair
+   * verifies, which the process states on every call it makes. For a
+   * standalone agent: the module it links. */
   target?: string | undefined;
   /** The life the generation runs under: its journal and its traces
    * are kept under it. A launch that names none is answered the
@@ -51,12 +54,21 @@ export interface GenerationFacts {
   /** The lives of the modules the generation composes, each id to its
    * life. */
   lives?: Record<string, string> | undefined;
+  /** What the agent's traces were set to: `on`, `debug` (the launcher
+   * turns the agent's debug section on for it) or `off`. A launch that
+   * names none leaves the reading to the runtime. */
+  traces?: 'on' | 'debug' | 'off' | undefined;
+  /** What the traces of the modules the generation composes were set
+   * to, each id to `on` or `off`: the modules a setting was made
+   * for. */
+  moduleTraces?: Record<string, 'on' | 'off'> | undefined;
 }
 
 const DIGEST = /^sha256:[a-f0-9]{64}$/;
 const LIFE = /^[a-z0-9]{6,40}$/u;
 const TYPES: readonly GenerationFacts['type'][] = ['service', 'task', 'job', 'worker'];
-const FORMS: readonly NonNullable<GenerationFacts['form']>[] = ['test', 'tester'];
+const FORMS: readonly NonNullable<GenerationFacts['form']>[] = ['test', 'tester', 'standalone'];
+const TRACES: readonly NonNullable<GenerationFacts['traces']>[] = ['on', 'debug', 'off'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -86,6 +98,8 @@ export function parseGenerationFacts(value: unknown): GenerationFacts {
     target,
     life,
     lives,
+    traces,
+    moduleTraces,
   } = value;
   if (typeof agentId !== 'string' || agentId === '')
     throw new Error('the generation facts name no agent');
@@ -120,6 +134,12 @@ export function parseGenerationFacts(value: unknown): GenerationFacts {
     throw new Error('the generation facts carry an invalid target');
   if (target !== undefined && form === undefined)
     throw new Error('the generation facts name a target without a form');
+  if (form === 'standalone' && target === undefined)
+    throw new Error('the generation facts name a standalone agent without its module');
+  if (form === 'standalone' && testOf !== undefined)
+    throw new Error('the generation facts name a testOf for a standalone agent');
+  if (form === 'standalone' && type !== 'service')
+    throw new Error('the generation facts name a standalone agent that is no service');
   if (life !== undefined && (typeof life !== 'string' || !LIFE.test(life)))
     throw new Error('the generation facts carry an invalid life');
   if (
@@ -128,6 +148,14 @@ export function parseGenerationFacts(value: unknown): GenerationFacts {
       Object.values(lives).some((one) => typeof one !== 'string' || !LIFE.test(one)))
   )
     throw new Error('the generation facts carry invalid lives');
+  if (traces !== undefined && !TRACES.includes(traces as NonNullable<GenerationFacts['traces']>))
+    throw new Error('the generation facts carry traces that are none of on, debug and off');
+  if (
+    moduleTraces !== undefined &&
+    (!isRecord(moduleTraces) ||
+      Object.values(moduleTraces).some((one) => one !== 'on' && one !== 'off'))
+  )
+    throw new Error("the generation facts carry a module's traces that are neither on nor off");
   return {
     agentId,
     port,
@@ -143,6 +171,10 @@ export function parseGenerationFacts(value: unknown): GenerationFacts {
     ...(target === undefined ? {} : { target }),
     ...(life === undefined ? {} : { life }),
     ...(lives === undefined ? {} : { lives: lives as Record<string, string> }),
+    ...(traces === undefined ? {} : { traces: traces as NonNullable<GenerationFacts['traces']> }),
+    ...(moduleTraces === undefined
+      ? {}
+      : { moduleTraces: moduleTraces as Record<string, 'on' | 'off'> }),
   };
 }
 

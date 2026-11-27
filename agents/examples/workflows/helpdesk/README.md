@@ -63,25 +63,9 @@ $ cernanto call examples/workflows/helpdesk ask question="Who approves an expens
 
 The helpdesk is the task's spec, its folder (`docs/`, the bot's spec
 `bot.cern.md` with its package under `.cern/`, this README) and the
-task's package under `examples/workflows/.cern/`. Copy them into a workspace of
-your own, keeping the `examples/workflows/` path, and deploy the top from
-there; both land as they are.
-
-<!-- lab exercise -->
-
-```
-$ mkdir -p ../my-agents/examples/workflows/.cern
-$ cp examples/workflows/helpdesk.cern.md ../my-agents/examples/workflows/
-$ cp -R examples/workflows/helpdesk ../my-agents/examples/workflows/
-$ cp examples/workflows/.cern/helpdesk.cern ../my-agents/examples/workflows/.cern/
-$ (cd ../my-agents && cernanto deploy examples/workflows/helpdesk/bot)
-landed 2 packages; nothing to compile
-```
-
-The id is the path, so the copy deploys the same agent your plane
-already runs; a second desk beside it is the spec under another name
-(the file and, for its `file:` grants, its folder), a fresh compile under
-the new id, and `cernanto delete <id>` retires the old one.
+task's package under `examples/workflows/.cern/`. They are yours to change
+where they are: edit, deploy, and the compile amends what the change
+touches.
 
 - **The data.** Your handbook goes under `docs/`, markdown pages; deploy,
   and the specs do not change.
@@ -93,7 +77,7 @@ the new id, and `cernanto delete <id>` retires the old one.
   deploy the task alone: the bot is unchanged and its next question
   reaches the new version.
 
-<!-- lab edit ../my-agents/examples/workflows/helpdesk.cern.md
+<!-- lab edit examples/workflows/helpdesk.cern.md
 the answer from those pages and name that page.
 =>
 the answer from those pages, in at most two sentences, and name
@@ -101,7 +85,7 @@ that page.
 -->
 
 ```
-$ (cd ../my-agents && cernanto deploy examples/workflows/helpdesk)
+$ cernanto deploy examples/workflows/helpdesk
 $ cernanto call examples/workflows/helpdesk ask question="How do I book leave?"
 {"answered":true,"answer":"Book it in the calendar, in whole or half days, and your manager approves it.","page":"holidays.md"}
 ```
@@ -120,6 +104,15 @@ $ curl -s -X POST "http://127.0.0.1:7434/v1/agents/examples%2Fworkflows%2Fhelpde
 
 Replace `docs/` with your own handbook and deploy; nothing in the
 specs changes.
+
+A project of your own starts from the same files, in a workspace of
+your own outside this repository, keeping the `examples/workflows/` path.
+`cernanto registry get examples/workflows/helpdesk` and `cernanto registry
+get examples/workflows/helpdesk/bot`, run in that folder, bring them. The
+id is the path, so it deploys the same agents your
+plane already runs; a second desk beside it is the spec under another
+name (the file and, for its `file:` grants, its folder), a fresh compile
+under the new id, and `cernanto delete <id>` retires the old one.
 
 ## The real form
 

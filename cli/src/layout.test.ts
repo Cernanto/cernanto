@@ -12,7 +12,7 @@ import { registerAuth } from './auth.js';
 import { registerAgent } from './agent.js';
 import { registerCalls } from './calls.js';
 import { registerCancel } from './cancel.js';
-import { registerCode } from './code.js';
+import { registerCompiled } from './compiled.js';
 import { registerCompletion } from './completion.js';
 import { registerConfig } from './config.js';
 import { registerContext } from './context.js';
@@ -23,11 +23,14 @@ import { registerDev } from './dev.js';
 import { registerInvoke } from './invoke.js';
 import { registerLogin } from './login.js';
 import { registerRegistry } from './registry.js';
+import { registerRestart } from './restart.js';
 import { registerSkill } from './skill.js';
 import { registerTests } from './tests.js';
 import { registerToken } from './token.js';
 import { registerLs } from './ls.js';
 import { registerTrace } from './trace.js';
+import { registerTraces } from './traces.js';
+import { registerUi } from './ui.js';
 
 // The cli's source layout: one module per verb, named as the verb, its
 // golden test beside it; main.ts holds the process and program.ts the
@@ -51,6 +54,13 @@ const LAYOUT: Module[] = [
     verbs: ['dev'],
     register: (p) => {
       registerDev(p);
+    },
+  },
+  {
+    file: 'ui.ts',
+    verbs: ['ui'],
+    register: (p) => {
+      registerUi(p);
     },
   },
   {
@@ -79,6 +89,13 @@ const LAYOUT: Module[] = [
     verbs: ['config'],
     register: (p) => {
       registerConfig(p);
+    },
+  },
+  {
+    file: 'traces.ts',
+    verbs: ['traces'],
+    register: (p) => {
+      registerTraces(p);
     },
   },
   {
@@ -113,10 +130,10 @@ const LAYOUT: Module[] = [
     },
   },
   {
-    file: 'code.ts',
-    verbs: ['code'],
+    file: 'compiled.ts',
+    verbs: ['compiled'],
     register: (p) => {
-      registerCode(p);
+      registerCompiled(p);
     },
   },
   {
@@ -166,6 +183,13 @@ const LAYOUT: Module[] = [
     verbs: ['delete'],
     register: (p) => {
       registerAgent(p);
+    },
+  },
+  {
+    file: 'restart.ts',
+    verbs: ['restart'],
+    register: (p) => {
+      registerRestart(p);
     },
   },
   {

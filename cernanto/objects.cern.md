@@ -1,6 +1,8 @@
 # cernanto/objects
 
-An interface: the plane's objects, named blobs of any size, as the
+Type: interface
+
+The plane's objects, named blobs of any size, as the
 platform's agents reach them wherever the plane runs. An implementor
 answers for the store the plane runs on, and every implementor is a
 module linked into its consumer's process. A consumer binds it with no
@@ -32,8 +34,6 @@ The operations:
 - LIST a prefix: every name under it.
 - DESCRIBE a name: its size in bytes and the moment it was put, or
   null when there is none.
-
-Type: interface
 
 ## License
 

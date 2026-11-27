@@ -4,40 +4,42 @@
 
 This guide explains the translation from an English specification to a running agent. For the syntax and authoring rules, use [Writing agents](WRITING-AGENTS.md).
 
-## From a page to a package
+## From source to package
 
 ```text
-agent.cern.md     a page of plain English, in git: the source you maintain
+agent.cern.md     an agent in plain English, in git: the source you maintain
       |
-   compile        your coding assistant writes TypeScript from the page
+   compile        your coding assistant writes TypeScript from the source
       |
-    gates         the type-check and static scans; the code reaches only what the page names
+    gates         the type-check and static scans; the code reaches only what the source names
       |
-    tests         a second session writes them from the page and never sees the code
+    tests         a second session writes them from the source and never sees the code
       |
   live tests      the tests run against the deployed agent and its real dependencies
       |
- agent.cern       the package: the page, the code, the tests and the contract, committed beside the page
+ agent.cern       the package: the source, the code, the tests and the contract, committed beside the source
       |
   the plane       durable processes on your laptop or your own servers, every call journaled
 ```
 
-A change to a sentence amends the code it wrote rather than starting over, and the tests move only when the promise did. At run time a model is asked only where the page calls for a judgment, and its answer is recorded.
+A change to a sentence amends the code it wrote rather than starting over, and the tests move only when the promise did. At run time a model is asked only where the source calls for a judgment, and its answer is recorded.
 
 The generated TypeScript is inspectable. After deploying an agent, these commands show its source, implementation, tests and public contract:
 
 ```bash
 cernanto source examples/workflows/helpdesk
-cernanto code examples/workflows/helpdesk
+cernanto compiled examples/workflows/helpdesk
 cernanto tests examples/workflows/helpdesk
 cernanto contract examples/workflows/helpdesk
 ```
 
-The `code` command also accepts a local `.cern` package path, so inspection does not require starting the runtime. For example, from `agents/`:
+The `compiled` command also accepts a local `.cern` package path, so inspection does not require starting the runtime. For example, from `agents/`:
 
 ```bash
-cernanto code examples/workflows/.cern/helpdesk.cern
+cernanto compiled examples/workflows/.cern/helpdesk.cern
 ```
+
+In the plane's [web UI](UI.md), an agent's Source, Compiled and Contract tabs show the same.
 
 ## Typed contracts and composition
 
@@ -132,7 +134,7 @@ The tests are written by a second session that sees the spec and the contract an
 05:40:58  connectors/deepwiki  verify       ok 2 tests passed  16s
 ```
 
-### When the page itself was ambiguous, and tests that must not act
+### When the source itself was ambiguous, and tests that must not act
 
 When the spec itself was ambiguous, the tests can share the misunderstanding, and the trace is where you see it. You fix the sentence, not the code, and you can pin the case. The support follow-up says a response counts whether it was there before the team was told or recorded any time after, and its paragraph on proving the desk pins it:
 
@@ -141,7 +143,7 @@ a response recorded on the ticket, even one recorded before the team
 was told, ends the wait as a response, with no reminder
 ```
 
-Tests run live, so a workflow that sends mail or refunds money is tested on a second account of the provider, logged in as the connector's `tester`, or with a `Mocks:` line that has the tests replace the one dependency whose real action a test must not cause; every other dependency stays real. `cernanto code <agent>` prints the generated code, `cernanto tests <agent>` its tests, and `cernanto trace` prints what ran. When prose is not enough, existing code is an npm package one `Uses:` line away.
+Tests run live, so a workflow that sends mail or refunds money is tested on a second account of the provider, logged in as the connector's `tester`, or with a `Mocks:` line that has the tests replace the one dependency whose real action a test must not cause; every other dependency stays real. `cernanto compiled <agent>` prints the generated code, `cernanto tests <agent>` its tests, and `cernanto trace` prints what ran; once the agent's traces stand at `debug` (`cernanto traces <agent> debug`), `--debug` adds the lines the compiled code writes at each operation. When prose is not enough, existing code is an npm package one `Uses:` line away.
 
 ## Connect your services
 
@@ -182,7 +184,7 @@ Given an order id, answer its status and its total.
 cernanto auth login acme/orders orders.acme.internal   # answers the agent's ask: paste the token
 ```
 
-The declaration is the `Uses:` line and the one sentence; the setup is named beside it: the account logged in once, as the agent's own, into the plane's safe; a file the page grants for a lookup table; and, for the tests, a second account of the provider logged in as `tester`, or a `Mocks:` line that has the tests replace the one dependency whose real action a test must not cause. The other direction is one line and one sentence too: an `Implements:` line that names the document and "serve the API that the document describes" make your agent the server of that document, listening on the port its spec names, as the refund desk is.
+The declaration is the `Uses:` line and the one sentence; the setup is named beside it: the account logged in once, as the agent's own, into the plane's safe; a file the source grants for a lookup table; and, for the tests, a second account of the provider logged in as `tester`, or a `Mocks:` line that has the tests replace the one dependency whose real action a test must not cause. The other direction is one line and one sentence too: an `Implements:` line that names the document and "serve the API that the document describes" make your agent the server of that document, listening on the port its spec names, as the refund desk is.
 
 Events arrive through a wait. An agent that works with `cernanto/webhook` is its own endpoint, and on a laptop or a homelab the free hosted relay at hooks.cernanto.com fronts it with no public IP, DNS record or certificate on your side, so a Stripe payment, a GitHub push or a form submission reaches the wait your agent keeps open the moment it happens.
 

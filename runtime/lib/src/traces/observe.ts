@@ -35,7 +35,8 @@ let consoleWriting = false;
 const ANSI_PATTERN = /\u001b\[[0-9;]*m/g;
 
 /** The section name generated code logs under; the launcher enables it
- * with NODE_DEBUG for a compile's verification pair alone. */
+ * with NODE_DEBUG for a compile's verification pair and for an agent
+ * whose traces are set to debug. */
 const AGENT_DEBUG_SECTION = 'agent';
 const DEBUGLOG_LINE = new RegExp(`^${AGENT_DEBUG_SECTION.toUpperCase()} \\d+: ([\\s\\S]*)$`);
 const DEBUGLOG_HEAD = new RegExp(`^${AGENT_DEBUG_SECTION.toUpperCase()} \\d+: `);
@@ -190,8 +191,9 @@ export function installStreamCapture(): void {
         ).trimEnd();
         if (text.length > 0) {
           // The agent's own debuglog('agent') lines (node:util, on
-          // when NODE_DEBUG names the section, which a verification
-          // pair's copies do) arrive as `AGENT <pid>: <message>`: they
+          // when NODE_DEBUG names the section, which the copies of a
+          // verification pair and of an agent set to debug do) arrive
+          // as `AGENT <pid>: <message>`: they
           // record at debug level, prefix stripped, and stay hidden
           // until an operator asks for them.
           const debug = DEBUGLOG_LINE.exec(text);

@@ -2,8 +2,7 @@
 
 Type: interface
 
-Read the traces the plane's agents stored, the contract each store's
-reader implements for cernanto/trace. Every read names an agent's
+Read the traces the plane's agents stored. Every read names an agent's
 service, its id with every character that is not a letter or a digit
 written as `_`, and the life its traces are kept under; a life with
 nothing stored reads as empty.

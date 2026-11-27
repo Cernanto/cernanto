@@ -454,6 +454,42 @@ test('--follow follows a worker whose current package lands with no compile', as
   assert.equal((client as unknown as { submitted: unknown[] }).submitted.length, 0);
 });
 
+test('--follow of a worker whose traces are off says so and waits for no run it cannot see', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'deploy-follow-'));
+  mkdirSync(join(root, 'jobs', '.cern'), { recursive: true });
+  writeFileSync(join(root, 'jobs', 'tick.cern.md'), specOf('jobs/tick'));
+  writeFileSync(join(root, 'jobs', '.cern', 'tick.cern'), packageOf('jobs/tick', 'worker'));
+  // The plane tells no record of the worker: its traces are off.
+  const client = {
+    ...planeOf({ callId: 'inv-follow-off', doneAfter: 1, stream: [] }),
+    ls: () =>
+      Promise.resolve({ agents: [{ agentId: 'jobs/tick', type: 'worker', traces: 'off' }] }),
+  } as unknown as DeployPlane;
+  const out: string[] = [];
+  const exits: number[] = [];
+  await deployAction(
+    ['jobs/tick'],
+    { follow: true },
+    {
+      client,
+      agentsRoot: root,
+      stdout: (text) => out.push(text),
+      stderr: () => undefined,
+      coder: () => Promise.resolve(),
+      asks: {},
+      exit: (code) => exits.push(code),
+    },
+  );
+  const said = out.join('');
+  assert.match(said, /landed 1 package; nothing to compile/);
+  assert.match(
+    said,
+    /not followed: the traces of jobs\/tick are off, so nothing of its calls is stored; turn them on with: cernanto traces jobs\/tick on\n/,
+  );
+  assert.doesNotMatch(said, /following jobs\/tick live|nothing to follow/);
+  assert.deepEqual(exits, [], 'no followed run ended the process: the deploy ends by itself');
+});
+
 test("a named worker's deploy runs its program again when its row did not roll, and --follow follows that run", async () => {
   const root = mkdtempSync(join(tmpdir(), 'deploy-follow-'));
   mkdirSync(join(root, 'jobs', '.cern'), { recursive: true });

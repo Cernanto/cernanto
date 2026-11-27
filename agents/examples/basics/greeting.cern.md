@@ -1,9 +1,8 @@
 # Greeting
 
-This page only defines the contract every greeter implements: given
-a name, answer a greeting for that person.
-
 Type: interface
+
+Given a name, answer a greeting for that person.
 
 ## License
 

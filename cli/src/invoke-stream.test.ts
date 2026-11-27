@@ -49,6 +49,25 @@ test('a watched call that answers a value ends with it, null among them', async 
   assert.deepEqual(answered, { result: null, callId: 'ops_null:20001:c-2:0123456789abcdef' });
 });
 
+test('a watched call hears that it started the module by itself when the plane says so at its acceptance, and nothing otherwise', async () => {
+  const callId = 'billing_price_book_standalone:20001:c-3:0123456789abcdef';
+  events = [
+    { accepted: { callId, started: 'billing/price-book-standalone' } },
+    { result: { total: 100 } },
+  ];
+  const heard: string[] = [];
+  const hear = {
+    onStarted: (standaloneId: string) => {
+      heard.push(standaloneId);
+    },
+  };
+  await (await client()).invokeStream('billing/price-book', 'quote', { amount: 100 }, hear);
+  assert.deepEqual(heard, ['billing/price-book-standalone']);
+  events = [{ accepted: { callId } }, { result: { total: 100 } }];
+  await (await client()).invokeStream('billing/price-book', 'quote', { amount: 100 }, hear);
+  assert.deepEqual(heard, ['billing/price-book-standalone']);
+});
+
 test("a watched call's failure is thrown in its kind and words", async () => {
   events = [
     { accepted: { callId: 'ops_fail:20001:c-3:0123456789abcdef' } },

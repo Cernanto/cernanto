@@ -137,9 +137,20 @@ export interface ProcessFacts {
   lives?: Record<string, string> | undefined;
   /** The release's own agents, the ids of the release's packages: a
    * call made by one of them passes on the agent it was called to
-   * charge, and a linked call of one of them is left out of the traces.
-   * Handed by the block at every launch. */
+   * charge, and the traces of one of them are off where the launch
+   * names no setting for it. Handed by the block at every launch. */
   releaseAgents?: readonly string[] | undefined;
+  /** What the traces of the agent this process serves were set to:
+   * `on`, its calls with their details and the console's lines;
+   * `debug`, the same with the agent's debug lines; `off`, nothing
+   * stored. Named by the generation's launch; an agent whose launch
+   * names none is off when it is one of the release's and on
+   * otherwise. */
+  traces?: 'on' | 'debug' | 'off' | undefined;
+  /** What the traces of the modules this process composes were set to,
+   * each id to `on` or `off`; a module the launch names none for is
+   * off when it is one of the release's and on otherwise. */
+  moduleTraces?: Record<string, 'on' | 'off'> | undefined;
   /** How long a stored trace stands (the trace agent's setting
    * `cernanto/trace/retention-minutes`), read once at boot. */
   traceRetentionMs?: number | undefined;

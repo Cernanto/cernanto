@@ -2,7 +2,7 @@
 
 Type: module
 
-Uses: cernanto/config, cernanto/trace, cernanto/controller/state, cernanto/controller/streams, cernanto/controller/execution
+Uses: cernanto/config, cernanto/trace, cernanto/controller/state, cernanto/controller/streams, cernanto/controller/execution, cernanto/controller/rollout
 
 Answer the operator's views of the plane, reading it alone: `agents`,
 `describe` and `history` show the fleet's rows and generations, `ls`
@@ -15,7 +15,8 @@ verbatim, its `<placeholders>` filled in.
 ## The sources
 
 Read the fleet (the state module's record `fleet`) through the state
-module; the generations' instances, the hosts and the metrics through
+module; the generations' instances, the hosts, the metrics and the
+release's agents through
 the backend, the execution module; the views and the holdings through
 the streams module; and the running totals, the calls and the AI
 usage, through cernanto/trace, the plane's reader of traces. Read each
@@ -49,7 +50,10 @@ absent), status, copies, ready ('<ready>/<total>'), restarts,
 cpuMillicores?, memoryMi?, journalEntries?,
 snapshotMi?, journalMi?, incomingTotal?,
 outgoingTotal?, totalsSince?, inputTokens?, outputTokens?, costUsd?,
-links?, implements?, contractSha?, functions?}`.
+links?, implements?, contractSha?, functions?, traces?}`. `traces` is
+what the row's traces stand at, `on`, `debug` or `off`: the rollout
+module's answer for the row and the release's agents, on every row but
+an interface's, which carries none.
 
 A RUNNABLE ROW (neither a module nor an interface) has its
 generations' instances read through the backend: the inventory and
@@ -127,7 +131,9 @@ agent's row stands alone.
 Every read fronts the live plane the tests run on, so the tests call
 each read as it is and assert its shape against what this plane
 holds: `ls` lists the controller as a ready row and this module among
-the modules composed into one agent; `agents`, `describe` of the
+the modules composed into one agent, every row that is no interface's
+with its `traces`, one of the three words, and an interface's row with
+none; `agents`, `describe` of the
 controller and `history` answer rows and generations with the fields
 named here; `nodes` and `status` answer their shapes; an agent nothing
 knows answers the words named here.

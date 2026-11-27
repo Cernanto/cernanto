@@ -202,25 +202,9 @@ examples/workflows/invoice-approval` shows the tests.
 ## Make it yours
 
 The desk is the spec, its folder (`approvers.json`, this README) and
-the package under `examples/workflows/.cern/`. Copy them into a workspace of
-your own, keeping the `examples/workflows/` path, and deploy from there; the
-package lands as it is.
-
-<!-- lab exercise -->
-
-```
-$ mkdir -p ../my-agents/examples/workflows/.cern
-$ cp examples/workflows/invoice-approval.cern.md ../my-agents/examples/workflows/
-$ cp -R examples/workflows/invoice-approval ../my-agents/examples/workflows/
-$ cp examples/workflows/.cern/invoice-approval.cern ../my-agents/examples/workflows/.cern/
-$ (cd ../my-agents && cernanto deploy examples/workflows/invoice-approval)
-landed 1 package; nothing to compile
-```
-
-The id is the path, so the copy deploys the same agent your plane
-already runs; a second desk beside it is the spec under another name
-(the file and, for its `file:` grants, its folder), a fresh compile under
-the new id, and `cernanto delete <id>` retires the old one.
+the package under `examples/workflows/.cern/`. They are yours to change
+where they are: edit, deploy, and the compile amends what the change
+touches.
 
 - **The data.** `approvers.json` is the approver table: the amount
   bands, who approves each, the tolerance, the controller; edit it and
@@ -234,7 +218,7 @@ the new id, and `cernanto delete <id>` retires the old one.
   sample again, the one nobody answers (it was never posted, so it is
   not a duplicate): one window instead of two.
 
-<!-- lab edit ../my-agents/examples/workflows/invoice-approval.cern.md
+<!-- lab edit examples/workflows/invoice-approval.cern.md
 When the window
 passes, remind the approver once; when it passes again, escalate to the
 controller the table names and stop waiting.
@@ -244,7 +228,7 @@ passes, escalate to the controller the table names and stop waiting.
 -->
 
 ```
-$ (cd ../my-agents && cernanto deploy examples/workflows/invoice-approval)
+$ cernanto deploy examples/workflows/invoice-approval
 ```
 
 <!-- lab exercise -->
@@ -261,6 +245,15 @@ $                                                       # the first terminal ans
   gateway, as the support desk's recipe shows; each call parks until the
   next invoice mail arrives and answers what happened to it, so a
   system calls it in a loop.
+
+A project of your own starts from the same files: the spec, its folder
+and its package, in a workspace of your own outside this repository,
+keeping the `examples/workflows/` path. `cernanto registry get
+examples/workflows/invoice-approval`, run in that folder, brings them.
+The id is the path, so it deploys the same agent your plane already
+runs; a second desk beside it is the spec under another name (the file
+and, for its `file:` grants, its folder), a fresh compile under the new
+id, and `cernanto delete <id>` retires the old one.
 
 ## The real form
 
@@ -300,7 +293,7 @@ the purchasing tables, `purchasing.sql` beside this README: the
 vendors, the purchase orders and their lines, the goods receipts and
 the accounts-payable ledger, seeded with the sandbox's rows. Load it
 into a free Neon or Supabase database, then change the grant and give
-the coder the schema:
+the coding assistant the schema:
 
 ```
 $ psql "$DATABASE_URL" -f examples/workflows/invoice-approval/purchasing.sql

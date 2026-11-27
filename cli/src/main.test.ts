@@ -176,6 +176,19 @@ test('with no override the current context is the plane, and an unknown name is 
   assert.deepEqual(development.asked, []);
 });
 
+test("a verb's former name is answered with the verb that has its job, before any request", async () => {
+  forget();
+  const former = await cernanto('code', 'ops/greeter');
+  assert.equal(former.code, 2);
+  assert.equal(former.stdout, '');
+  assert.equal(
+    former.stderr,
+    "error: unknown command 'code'; cernanto compiled <agent> prints the code the compile wrote\nsee: cernanto --help\n",
+  );
+  assert.deepEqual(production.asked, []);
+  assert.deepEqual(development.asked, []);
+});
+
 test('a current context the file does not hold is refused before any request, and a switch repairs it', async () => {
   const dangling = mkdtempSync(join(tmpdir(), 'cernanto-main-dangling-'));
   mkdirSync(join(dangling, '.cernanto'), { recursive: true });

@@ -5,7 +5,8 @@ Type: module
 Decide the life of the fleet's generations. Given the fleet, what the
 backend runs and its settings, say which rows need a new generation
 and why, and what each new generation is born with. Given a row and
-its generation, say what its launch carries. Given a pending
+its generation, say what its launch carries. Given a row, say what
+the agent's traces stand at. Given a pending
 generation's status, say whether it is active. Given a draining
 generation, say whether it may go. Say when the next of these rules
 becomes due. Everything is handed in as arguments and every answer is
@@ -16,18 +17,23 @@ A runnable row is every row whose `type` is other than `interface`
 or `module`, a service when it has no type; these rules are the
 runnable rows'. THE HOST JOB'S ROW, `cernanto/host`, is adopted like
 any runnable row, and its adopted generation stands as it is for the
-life of the plane, whatever its artifact, its config, its composition
-or its image say by now, its status left as the plan finds it. The
+life of the plane, whatever its artifact, its config, its composition,
+its image or the traces set say by now, its status left as the plan
+finds it. The
 fleet, as this module reads it: `deleting?`,
 `bindings?` (with an `accounts` map), `agents` rows `{agentId,
 artifact, type?, uses, usesContracts? (ids to sha256 hex pins),
 implements? ([{id, contractSha}]), contract?, contractCompatibleWith?,
-run? (absent reads as zero), form?, testOf?, target?, composition? (the
+run? (absent reads as zero), form?, testOf?, target?, traces? (what a
+person set for the agent's traces, read as A ROW'S SETTING below),
+composition? (the
 modules pinned at the row's ship), life?, lives? (the modules' lives
 pinned with the composition)}` and `generations` rows `{agentId, gen,
 port, artifact, status ('pending'|'active'|'draining'), config?,
 worker?, run?, finished?, composition?, life?, lives?, image?,
-slots?, createdAt}`, every other field carried along. THE
+slots?, traces?, moduleTraces? (what its launch carries of traces,
+read as the same section says), createdAt}`, every other field carried
+along. THE
 LIFE: an agent runs under a life, the span of its deployment from its
 admission to its delete, and a generation runs under the life it was
 born with and belongs to the row of that life alone, whatever its
@@ -71,6 +77,34 @@ serving), and its id is answered among the unsatisfiable, whatever it
 carries pinned. An id with no row leaves the composition as it is.
 Export the computation as its own function.
 
+## The traces
+
+A ROW'S SETTING is its `traces` when that is a word the row may stand
+at: `on`, `debug` or `off` for a runnable row, `on` or `off` for a
+module's row. Anything else under that name is no setting and is read
+as absent, whatever its kind: a fleet may hold what an older controller
+carried along on a shipped row, and a value this module cannot read
+never stops a plan. A generation is read the same way: its `traces`
+when that is one of the three words, and of its `moduleTraces` the
+entries that are `on` or `off`, anything else read as absent.
+
+THE AGENTS KEPT ON are the runnable rows whose id is `cernanto/compile`
+or `cernanto/llm` or begins `cernanto/decision/`: the plane reads their
+records back, so their traces are stored while nobody set them
+otherwise. WHAT AN AGENT'S TRACES STAND AT, given its row and the
+release's agents, is the first of these that holds: `debug` for a row
+of a verification pair, one whose `form` is `test` or `tester`; the
+row's setting when it has one; `on` for a row among THE AGENTS
+KEPT ON; `off` for a row whose id is among the release's agents; `on`
+for any other row. Export it as its own function.
+
+THE SETTING A LAUNCH CARRIES, for a runnable row: none for a row of a
+verification pair, whose copies are traced in debug by their form;
+else the row's setting when it has one; else `on` for a row among
+THE AGENTS KEPT ON; else none. THE MODULES' SETTINGS of a composition:
+each module id of the composition whose row has a setting, mapped
+to it, the keys sorted; none when no such row has one.
+
 ## The plan
 
 Given the fleet, the backend's listing (absent when the backend could
@@ -101,10 +135,14 @@ or whose newest non-draining generation (the highest `gen`) differs
 from the row, the first difference in this order naming the reason: in
 `artifact` (`artifact`); in `config` against the bindings digest,
 absent and absent being equal (`config`); in `run`, absent reading as
-zero (`run`); in `composition` or in `lives`, absent reading as the
+zero (`run`); in `traces` against THE SETTING A LAUNCH CARRIES for the
+row, absent and absent being equal (`traces`); in `composition` or in
+`lives`, absent reading as the empty map, or in `moduleTraces` against
+THE MODULES' SETTINGS of the row's composition, absent reading as the
 empty map (`composition`); or, for an agent among the release's agents while the
 settings name a release, in `image` against that release (`image`).
-THE PACING: answer every `new`, `artifact`, `config` and `run` need; of
+THE PACING: answer every `new`, `artifact`, `config`, `run` and `traces`
+need; of
 the `composition` needs at most the budget, the oldest newest-generation
 first (by `createdAt`, then by agent id); of the `image` needs one,
 chosen the same way. A need carries the agent id, the reason, the
@@ -128,14 +166,19 @@ worker: true (for a worker), run (the row's, when above zero),
 composition (when non-empty), config (the bindings digest, when
 present), createdAt (the moment), image (the settings' release, when
 present), slots (4 for a task or a job, 1 for a service or a worker),
-life (the row's), lives (the row's, when non-empty)}`, its keys in that
+life (the row's), lives (the row's, when non-empty), traces (THE
+SETTING A LAUNCH CARRIES for the row, when there is one), moduleTraces
+(THE MODULES' SETTINGS of the composition, when there are any)}`, its
+keys in that
 order. Then mark `draining` every non-draining generation whose agent
 has no row, or whose `life` is another than its row's. On a fleet marked `deleting`, the
 rewrite's one change is marking every non-draining generation
 `draining`. For a `composition` need, the planned generation's CHANGED
 MODULE IDS are the keys whose digest differs between the previous
 generation's composition (the empty map without one) and the new one,
-sorted.
+with the ids whose setting differs between the previous generation's
+`moduleTraces` (the empty map without one) and the new one, each id
+once, sorted.
 
 A TASK OR A JOB ROLLS WITH OVERLAP: the new generation is appended
 beside the one it has, and both serve until the older one is retired.
@@ -149,7 +192,8 @@ the launch facts: the agent id, `gen`, `port`, `artifact`,
 `composition` (the empty map when absent), `life` and `lives` when the
 generation carries them, the type (`service` when
 the row has none), for a worker `run` (the generation's, zero when
-absent), `slots` when the generation carries it, and `form`,
+absent), `slots` when the generation carries it, `traces` and
+`moduleTraces` when the generation carries them, and `form`,
 `testOf` and `target` when the row carries them (the pair's canonical
 agent, which both forms state on their calls). When the generation carries no
 `image` and the settings name no release, answer instead that the

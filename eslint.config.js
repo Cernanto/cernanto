@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Cernanto.
 // SPDX-License-Identifier: Apache-2.0
+import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -12,11 +13,14 @@ export default tseslint.config(
       // The cli's gateway client, generated from the gateway's OpenAPI
       // document by cli/scripts/regen-gateway.mjs: the engine's style, not ours.
       'cli/src/gateway/**',
+      // The web UI's gateway client, made the same way before every
+      // build of the UI by ui/scripts/gateway-client.mjs.
+      'ui/src/gateway/**',
       '**/node_modules/**',
     ],
   },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.ts', '**/*.tsx'],
     extends: [...tseslint.configs.strictTypeChecked],
     languageOptions: {
       parserOptions: {
@@ -35,6 +39,15 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+  {
+    // The web UI: React's own two rules of hooks beside the workspace's.
+    files: ['ui/src/**/*.ts', 'ui/src/**/*.tsx'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
     },
   },
 );

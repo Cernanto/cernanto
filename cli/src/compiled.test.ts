@@ -16,21 +16,21 @@ import {
   registryOf,
   treeWith,
 } from './agent-package.fixture.js';
-import { codeOf } from './code.js';
+import { compiledOf } from './compiled.js';
 
 const HELPER = 'export function shout(text: string): string {\n  return text.toUpperCase();\n}\n';
 const ABOUT = "export const about = 'greets';";
 
-test('code prints every file the coder wrote, each under its path in the package, the entry module first', async () => {
+test('compiled prints every file the coder wrote, each under its path in the package, the entry module first', async () => {
   const { file } = treeWith(
     packageBytes({ code: { 'words.ts': HELPER, 'index.ts': CODE, 'about.ts': ABOUT } }),
   );
   assert.equal(
-    await codeOf(file, {}, OFFLINE_SEAMS),
+    await compiledOf(file, {}, OFFLINE_SEAMS),
     `==== code/index.ts ====\n${CODE}==== code/about.ts ====\n${ABOUT}\n==== code/words.ts ====\n${HELPER}`,
   );
   // As json, each file's text by its path, as the package holds it.
-  const json = JSON.parse(await codeOf(file, { output: 'json' }, OFFLINE_SEAMS)) as {
+  const json = JSON.parse(await compiledOf(file, { output: 'json' }, OFFLINE_SEAMS)) as {
     files: Record<string, string>;
   };
   assert.deepEqual(Object.keys(json.files), ['code/index.ts', 'code/about.ts', 'code/words.ts']);
@@ -41,7 +41,7 @@ test('code prints every file the coder wrote, each under its path in the package
   });
 });
 
-test('code of a deployed agent reads its package back by the digest its row names', async () => {
+test("compiled reads a deployed agent's package back by the digest its row names", async () => {
   const bytes = packageBytes();
   const digest = `sha256:${'d'.repeat(64)}`;
   const asked: string[] = [];
@@ -54,7 +54,7 @@ test('code of a deployed agent reads its package back by the digest its row name
     },
   });
   assert.equal(
-    await codeOf('ops/greeter', {}, { ...OFFLINE_SEAMS, plane: () => plane }),
+    await compiledOf('ops/greeter', {}, { ...OFFLINE_SEAMS, plane: () => plane }),
     `==== code/index.ts ====\n${CODE}`,
   );
   assert.deepEqual(asked, [digest]);
@@ -62,12 +62,12 @@ test('code of a deployed agent reads its package back by the digest its row name
     describe: () => Promise.resolve({ agent: { agentId: 'ops/greeter', uses: [] } }),
   });
   await assert.rejects(
-    codeOf('ops/greeter', {}, { ...OFFLINE_SEAMS, plane: () => bare }),
+    compiledOf('ops/greeter', {}, { ...OFFLINE_SEAMS, plane: () => bare }),
     /ops\/greeter is deployed without a package to read/,
   );
 });
 
-test("code resolves its argument as contract does: the tree's package when nothing is deployed, the registry for a version or when the tree holds none", async () => {
+test("compiled resolves its argument as contract does: the tree's package when nothing is deployed, the registry for a version or when the tree holds none", async () => {
   const { agentsRoot } = treeWith(packageBytes({ code: { 'index.ts': CODE, 'words.ts': HELPER } }));
   const notDeployed = fakePlane({
     describe: () =>
@@ -80,14 +80,17 @@ test("code resolves its argument as contract does: the tree's package when nothi
     agentsRoot: () => agentsRoot,
   };
   assert.equal(
-    await codeOf('ops/greeter', {}, seams),
+    await compiledOf('ops/greeter', {}, seams),
     `==== code/index.ts ====\n${CODE}==== code/words.ts ====\n${HELPER}`,
   );
   assert.deepEqual(registry.hits, []);
-  assert.equal(await codeOf('ops/greeter@0.1.0', {}, seams), `==== code/index.ts ====\n${CODE}`);
+  assert.equal(
+    await compiledOf('ops/greeter@0.1.0', {}, seams),
+    `==== code/index.ts ====\n${CODE}`,
+  );
   const elsewhere = {
     ...seams,
-    agentsRoot: () => mkdtempSync(join(tmpdir(), 'cli-code-empty-')),
+    agentsRoot: () => mkdtempSync(join(tmpdir(), 'cli-compiled-empty-')),
   };
-  assert.equal(await codeOf('ops/greeter', {}, elsewhere), `==== code/index.ts ====\n${CODE}`);
+  assert.equal(await compiledOf('ops/greeter', {}, elsewhere), `==== code/index.ts ====\n${CODE}`);
 });

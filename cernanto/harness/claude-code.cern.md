@@ -5,7 +5,7 @@ Type: module
 Implements: cernanto/harness
 Uses: cernanto/config, cernanto/machine, npm:@anthropic-ai/claude-agent-sdk, npm:fs-extra
 
-The Claude Code vendor, one of the harness implementors: it
+The Claude Code vendor: it
 runs the vendor's own tool as a child of its own process to evaluate
 one prompt and to drive a coding session, every tool call of a
 session answered by a policy without a model and the session's shell
