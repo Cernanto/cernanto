@@ -1,6 +1,8 @@
 # cernanto/auth/waits
 
-The waiting room of the plane's safe, a service, and the keeper of the
+Type: service
+
+The waiting room of the plane's safe and the keeper of the
 asks the safe's calls wait on. `cernanto/auth` tells this agent when
 something was stored under an account and when a provider calls an
 authorization back, and a call of the safe that must wait for one of
@@ -100,8 +102,6 @@ kind, the one with the oldest `requestedAt`, each as it was handed with
 'pending', ask}` with the ask as `asks` answers it, `{state: 'ended',
 kind}` for one of the remembered ids, and `{state: 'unknown'}`
 otherwise.
-
-Type: service
 
 ## Tests
 

@@ -2,9 +2,8 @@
 
 Type: interface
 
-An interface: the basic component of the plane's AI, one prompt in and
-one answer out, implemented by the engines that answer a prompt with a
-language model. A consumer binds it with no name and the implementor
+The basic component of the plane's AI: one prompt in and one answer
+out, from a language model. A consumer binds it with no name and the implementor
 the plane binds serves, `cernanto/llm-prompt/default`,
 `cernanto/llm-prompt/harness` on a fresh plane; a consumer that names
 an implementor pins it.

@@ -1,7 +1,5 @@
 # cernanto/decision/jev
 
-Type: task
-
 Implements: cernanto/decision
 Uses: cernanto/config, npm:@typesafe-ai/sdk@0.6.0
 

@@ -3,3 +3,7 @@
 # A package is current for its spec by the spec's bytes: a spec keeps
 # its line endings on every system.
 *.cern*.md text eol=lf
+# The web UI's bundle is the bytes the UI agent's package was compiled
+# with: it keeps them on every system. Its diff stays text, so a scan
+# for secrets reads a change of it as it reads any file's.
+cernanto/ui/bundle/** -text

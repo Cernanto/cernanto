@@ -24,8 +24,9 @@ import {
 } from './lifetime.js';
 import { CernantoError, failureForRecord } from '../language/errors.js';
 import { setTraceSink } from '../traces/trace.js';
-import { outsideExecution } from './execution.js';
+import { getCallContext, outsideExecution } from './execution.js';
 import { serviceNameOf } from '../language/naming.js';
+import { isLinkedStory } from '../traces/story.js';
 import {
   closeSubstrate,
   openSubstrate,
@@ -62,11 +63,11 @@ import {
 } from './facts.js';
 import { writeTracePart } from '../traces/delivery.js';
 import {
-  isReleaseAgent,
   ownLife,
   resolveTraceFacts,
   retentionMs,
   setOwnLog,
+  tracesOf,
   writerNow,
 } from './trace-facts.js';
 import { workerRunKey } from './status.js';
@@ -96,22 +97,30 @@ import type { Holding } from './plane.js';
 import type { Definition } from '../language/core.js';
 import { kernelSay } from '../traces/observe.js';
 
-/** The sink the process's traces go through: the calls of the release's
- * own modules (an agent among the release's, a linked call) are left out
- * of the traces before the write, and counted in the totals all the
- * same. */
-function keptOutOfTheRelease(sink: TraceSink): TraceSink {
-  const leftOut = (agentId: string, story: string): boolean =>
-    story.includes('~') && isReleaseAgent(agentId);
+/** The sink the process's traces go through, each agent's kept by what
+ * its traces stand at here: what the code of an agent that is off
+ * would write is left out before the write (its records, its facts and
+ * the links from its calls to the calls they made), and a link to a
+ * linked call of an agent that is off goes with it, the call having
+ * left nothing to lead to. A link to a call over the wire is kept
+ * whatever its callee stands at, which this process cannot know. The
+ * totals are counted all the same. */
+function keptBySetting(sink: TraceSink): TraceSink {
+  const off = (agentId: string): boolean => tracesOf(agentId) === 'off';
   return {
     record: (record) => {
-      if (!leftOut(record.agentId, record.callId)) sink.record(record);
+      if (!off(record.agentId)) sink.record(record);
     },
     fact: (fact, under) => {
-      if (!leftOut(fact.agentId, fact.story)) sink.fact?.(fact, under);
+      if (!off(fact.agentId)) sink.fact?.(fact, under);
     },
     pointer: (pointer) => {
-      if (!leftOut(pointer.agentId, pointer.child)) sink.pointer?.(pointer);
+      // The link is stated by the code that made the call, in its own
+      // context: the caller is the agent that runs there.
+      const caller = getCallContext()?.agentId;
+      if (caller !== undefined && off(caller)) return;
+      if (isLinkedStory(pointer.child) && off(pointer.agentId)) return;
+      sink.pointer?.(pointer);
     },
     count: (delta, under) => {
       sink.count?.(delta, under);
@@ -290,7 +299,7 @@ export async function serveAgent(definition: Definition, options: ServeOptions):
       setTraceFollow(undefined);
       return Promise.resolve();
     });
-    setTraceSink(keptOutOfTheRelease(sink.sink));
+    setTraceSink(keptBySetting(sink.sink));
   }
   drainRandomness();
   const handles = await openSubstrate();

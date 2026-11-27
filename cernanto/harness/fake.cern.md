@@ -5,7 +5,7 @@ Type: module
 Implements: cernanto/harness
 Uses: cernanto/config, npm:fs-extra
 
-The rehearsal vendor, one of the harness implementors: it answers
+The rehearsal vendor: it answers
 every one-shot and every session turn from script files, so a test
 plane runs whole compiles with no model and no cost. Read two
 JSON-array files, `ai-script.json` for one-shots and

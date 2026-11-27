@@ -34,7 +34,10 @@ AT THE START, read `rollout-budget`, `park-services` and
 `rebalance-spread` through the configuration agent and the
 fleet (the state module's record `fleet`) through the state module, at
 the same time. The budget is `rollout-budget` when it is a number, 8
-otherwise; services park when `park-services` is true. Read the
+otherwise; services park when `park-services` is true. A MODULE
+STARTED BY ITSELF PARKS WHATEVER THAT SETTING SAYS: wherever the
+autoscaler is told whether services park, for a row whose `form` is
+`standalone` it is told they do. Read the
 backend's settings and its listing of generations at the same time,
 once per pass; the settings' opaque configuration snapshot rides back
 on every ensure, status, scale and removal of the pass. A fleet never
@@ -48,7 +51,8 @@ mutation, remove every row carrying that owner and mark its
 non-draining generations draining, noting `pair-removed` with the
 owner as the subject and `the compile <owner> is over; its
 verification pair left`. A read that fails, and an owner that does
-not split, keep the pair.
+not split, keep the pair. A row that carries `form` and no `owner` is
+no pair, a module started by itself, and stays.
 
 THE PLANNING. Ask the rollout module for the plan over the fleet, the
 listing (absent when the backend refused it or could not answer), the
@@ -63,11 +67,15 @@ Note `generation-adopted` for each adopted generation (the agent id
 and `adopted the listed generation of <agentId> on port <port>`) and
 `generation-planned` for each generation planned for a `composition`
 need (`generation <gen> of <agentId> planned on port <port> for a
-changed composition: <the changed module ids joined ", ">`).
+changed composition: <the changed module ids joined ", ">`) and for
+each planned for a `traces` need (`generation <gen> of <agentId>
+planned on port <port> for its traces set anew`).
 
 THE ENSURES, side by side. Hand every non-draining generation of a
 runnable row on a fleet that is not deleting to the backend, with the
-launch facts the rollout module composes, except a pending service's
+launch facts the rollout module composes, the `form` among them as the
+row carries it, `test`, `tester` or `standalone` (a launch that lost
+its form would start the package as itself), except a pending service's
 or worker's generation while another generation of the same agent
 exists (the recreate waits for the pass that finds it alone). When the
 rollout module answers that the backend names no release, leave the

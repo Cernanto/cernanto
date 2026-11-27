@@ -21,12 +21,15 @@ $ cernanto deploy examples/workflows/renewal-desk
 ```
 
 The contracts due, by the days asked for (thirty when none is given,
-or the configuration's `examples/workflows/renewal-desk/notice-days`):
+or the configuration's `examples/workflows/renewal-desk/notice-days`).
+The sandbox CRM's four contracts end 30, 60, 120 and 180 days after
+the day it starts, so the days you see follow your own; here it
+started on 31 October 2026:
 
 ```
 $ cernanto call examples/workflows/renewal-desk contractsDueForRenewal days:=200
 [{"id":"C-2024-018","company":"Skandia Bygg AB","endAt":"2026-11-30","value":48000,"targetPrice":45000, ...},
- {"id":"C-2025-003","company":"Fjord Logistics AS","endAt":"2026-12-15","value":26500,"targetPrice":25000, ...}, ...]
+ {"id":"C-2025-003","company":"Fjord Logistics AS","endAt":"2026-12-30","value":26500,"targetPrice":25000, ...}, ...]
 ```
 
 Renew one, with a minute's reply window instead of a week; the call

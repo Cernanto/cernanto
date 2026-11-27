@@ -433,6 +433,7 @@ export async function ensureMaterialized(options: {
         releaseDir: release,
         workingDir: folder,
         closures,
+        keepsPrivileges: options.keepsPrivileges,
         log: (line) => {
           lines.push(line);
         },
@@ -522,8 +523,9 @@ async function serve(options: {
    * runtime's own `invoke`: the host job's ring. */
   beside?: (invoke: Invoke) => void;
   /** The release's own agents, the ids of the release's packages, read
-   * off the release for every launch: the traces charge and skip by
-   * them, and no record of the plane carries them. */
+   * off the release for every launch: the traces charge by them and
+   * read by them an agent its launch names no setting for, and no
+   * record of the plane carries them. */
   releaseAgents?: readonly string[];
 }): Promise<void> {
   const { machine, folder, facts, copy, attempt, placement } = options;
@@ -578,15 +580,26 @@ async function serve(options: {
     // Both verification forms state the agent they stand for on every
     // call they make, beside the caller's id; a tester knows its test
     // form's id, so a module's form linked into it calls as the target.
-    ...(facts.form === undefined ? {} : { form: facts.form }),
-    ...(facts.testOf === undefined ? {} : { testOf: facts.testOf }),
-    ...(facts.target === undefined ? {} : { target: facts.target }),
+    // A standalone agent is an agent like any other to the kernel: the
+    // forms it knows are the pair's.
+    ...(facts.form === 'test' || facts.form === 'tester'
+      ? {
+          form: facts.form,
+          ...(facts.testOf === undefined ? {} : { testOf: facts.testOf }),
+          ...(facts.target === undefined ? {} : { target: facts.target }),
+        }
+      : {}),
     ...(placement === undefined ? {} : { holder: placement.holder }),
     host: placement?.holder.host ?? machine.id,
     ...(attempt === undefined ? {} : { attempt }),
     ...(placement?.process?.launch === undefined ? {} : { launch: placement.process.launch }),
     ...(facts.life === undefined ? {} : { life: facts.life }),
     ...(facts.lives === undefined ? {} : { lives: facts.lives }),
+    // What the launch says of the traces, the agent's and its modules':
+    // the runtime writes for each what it says, and reads an agent the
+    // launch names none for by the release's agents.
+    ...(facts.traces === undefined ? {} : { traces: facts.traces }),
+    ...(facts.moduleTraces === undefined ? {} : { moduleTraces: facts.moduleTraces }),
     ...(options.releaseAgents === undefined ? {} : { releaseAgents: options.releaseAgents }),
     implements: stampsOf(agentDir),
   });

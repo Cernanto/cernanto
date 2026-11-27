@@ -5,7 +5,7 @@ Type: module
 Implements: cernanto/harness
 Uses: cernanto/config, cernanto/machine, npm:@openai/codex-sdk, npm:fs-extra
 
-The Codex vendor, one of the harness implementors: it runs the
+The Codex vendor: it runs the
 vendor's own tool as a child of its own process to evaluate one
 prompt and to drive a coding session inside codex's own sandbox, on
 the machine's login or the plane's key, and narrates every session on

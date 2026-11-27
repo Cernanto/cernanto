@@ -69,6 +69,7 @@ import {
 import { ServerClient } from './server-client.js';
 import { terminalIo } from './terminal.js';
 import type { ConnectIo } from './terminal.js';
+import { uiAddress } from './ui.js';
 
 class NativeDevFault extends Error {
   readonly kind = 'native-dev-unavailable' as const;
@@ -521,6 +522,19 @@ async function recordIdentity(
   return saved;
 }
 
+/** What the verb says once the plane is up: where it answers, that the
+ * address is a screen too, and how the plane is parked. It opens no
+ * browser: the verb runs in scripts and over ssh, where there is none.
+ * @example upWords({baseUrl: 'http://127.0.0.1:7434', token: undefined})
+ */
+export function upWords(plane: Plane): string[] {
+  return [
+    `the local plane is up: ${plane.baseUrl}`,
+    `open its UI in a browser: ${uiAddress(plane)} (or: cernanto ui)`,
+    'park it with: cernanto dev down',
+  ];
+}
+
 /** Starts or resumes the local plane and selects its existing public gateway.
  * @param io - Output and optional physical paths.
  * @returns Once the platform and its gateway answer.
@@ -650,8 +664,7 @@ export async function startNativeDev(io: NativeDevIo): Promise<void> {
     }
   }
   await awaitPlatform(plane, io.say);
-  io.say(`the local plane is up: ${plane.baseUrl}`);
-  io.say('park it with: cernanto dev down');
+  for (const line of upWords(plane)) io.say(line);
   await io.afterUp?.(plane);
 }
 

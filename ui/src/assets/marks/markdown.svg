@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="16" viewBox="0 0 208 128" fill="currentColor" aria-hidden="true" focusable="false">
+  <!-- The Markdown mark, solid, as Dustin Curtis drew it and dedicated it to the
+  public domain (CC0 1.0 Universal): https://github.com/dcurtis/markdown-mark
+  Its guidelines ask for its own proportions and for one colour. -->
+  <path d="M193 128H15a15 15 0 0 1-15-15V15A15 15 0 0 1 15 0h178a15 15 0 0 1 15 15v98a15 15 0 0 1-15 15zM50 98V59l20 25 20-25v39h20V30H90L70 55 50 30H30v68zm134-34h-20V30h-20v34h-20l30 35z"/>
+</svg>

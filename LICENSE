@@ -10,7 +10,7 @@ Cernanto is licensed by folder.
 
   README.md, docs/                        Apache License, Version 2.0
 
-  runtime/lib, runtime/process,           Business Source License 1.1
+  runtime/lib, runtime/process, ui/,      Business Source License 1.1
   cernanto/                               (the LICENSE file in each folder,
                                           with the Additional Use Grant, the
                                           Cernanto Output Exception and the

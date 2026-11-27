@@ -35,6 +35,11 @@ export function linkedStoryOf(
   return `${hostStory}~${attempt === undefined ? '' : `${attempt}:`}${String(ordinal)}`;
 }
 
+/** Whether a story is a linked call's: its id carries a link's mark. */
+export function isLinkedStory(story: string): boolean {
+  return story.includes('~');
+}
+
 /** An id's head (before a link's mark) and its mark. */
 function splitMark(id: string): [string, string] {
   const mark = id.indexOf('~');

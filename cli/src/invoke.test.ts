@@ -1,12 +1,20 @@
 // Copyright (c) 2026 Cernanto.
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { test } from 'node:test';
 
 import { CernantoError } from '@cernanto/package-format';
 
 import type { ParameterReading } from './card-view.js';
-import { answerText, argsOf, invokeAgent, invokeAgentWatched } from './invoke.js';
+import {
+  answerText,
+  argsOf,
+  contractOfCall,
+  invokeAgent,
+  invokeAgentWatched,
+  startedAloneWords,
+} from './invoke.js';
 import { callOfRequest, recordKeyOf, recordsAsTheyHappened } from './server-client.js';
 import type { ServerClient } from './server-client.js';
 
@@ -242,6 +250,213 @@ test('invoke prints the result compact by default and pretty as json', async () 
     { output: 'json' },
   );
   assert.ok(pretty.includes('\n  "retried": true'));
+});
+
+test("a module's call names the agent it runs inside to the plane, in both forms of the call, and a call that names none sends none", async () => {
+  const asked: unknown[] = [];
+  const client = fake({
+    invoke: (agentId: string, fn: string, args: unknown, options: { in?: string }) => {
+      asked.push({ form: 'invoke', agentId, fn, args, in: options.in });
+      return Promise.resolve({ total: 120 });
+    },
+    invokeStream: (agentId: string, fn: string, args: unknown, options: { in?: string }) => {
+      asked.push({ form: 'stream', agentId, fn, args, in: options.in });
+      return Promise.resolve({ result: { total: 120 } });
+    },
+  });
+  const alone = { agentId: 'billing/price-book', handler: 'quote', args: { amount: 100 } };
+  const inside = { ...alone, in: 'billing/desk' };
+  assert.equal(await invokeAgent(client, inside, {}), '{"total":120}\n');
+  await invokeAgentWatched(client, inside, { write: () => undefined });
+  await invokeAgent(client, alone, {});
+  await invokeAgentWatched(client, alone, { write: () => undefined });
+  assert.deepEqual(asked, [
+    {
+      form: 'invoke',
+      agentId: 'billing/price-book',
+      fn: 'quote',
+      args: { amount: 100 },
+      in: 'billing/desk',
+    },
+    {
+      form: 'stream',
+      agentId: 'billing/price-book',
+      fn: 'quote',
+      args: { amount: 100 },
+      in: 'billing/desk',
+    },
+    {
+      form: 'invoke',
+      agentId: 'billing/price-book',
+      fn: 'quote',
+      args: { amount: 100 },
+      in: undefined,
+    },
+    {
+      form: 'stream',
+      agentId: 'billing/price-book',
+      fn: 'quote',
+      args: { amount: 100 },
+      in: undefined,
+    },
+  ]);
+  // The plane's refusal of a module that cannot be started by itself is
+  // printed as it is.
+  const refused = fake({
+    invoke: () =>
+      Promise.reject(
+        new CernantoError({
+          kind: 'terminal',
+          message:
+            '"billing/price-book" carries no contract; a module is linked by its contract, so it is not started by itself',
+        }),
+      ),
+  });
+  await assert.rejects(
+    invokeAgent(refused, alone, {}),
+    /^CernantoError: "billing\/price-book" carries no contract; a module is linked by its contract, so it is not started by itself$/,
+  );
+});
+
+test('a call that started the module by itself says so in one line, from the plane own word of it, in both forms of the call; a call that started nothing says nothing', async () => {
+  const alone = { agentId: 'billing/price-book', handler: 'quote', args: { amount: 100 } };
+  interface Heard {
+    onStarted?: (standaloneId: string) => void;
+  }
+  const starting = fake({
+    invoke: (_agentId: string, _fn: string, _args: unknown, options: Heard) => {
+      options.onStarted?.('billing/price-book-standalone');
+      return Promise.resolve({ total: 100 });
+    },
+    invokeStream: (_agentId: string, _fn: string, _args: unknown, options: Heard) => {
+      options.onStarted?.('billing/price-book-standalone');
+      return Promise.resolve({ result: { total: 100 } });
+    },
+  });
+  const line =
+    'started by itself as billing/price-book-standalone; it parks when idle, and this ends it: cernanto delete billing/price-book-standalone\n';
+  assert.equal(startedAloneWords('billing/price-book-standalone'), line);
+  // The answer alone is the output: the word of the start goes beside it.
+  const said: string[] = [];
+  assert.equal(
+    await invokeAgent(starting, alone, {}, (text) => {
+      said.push(text);
+    }),
+    '{"total":100}\n',
+  );
+  assert.deepEqual(said, [line]);
+  const written: string[] = [];
+  await invokeAgentWatched(starting, alone, {
+    write: (text) => {
+      written.push(text);
+    },
+  });
+  assert.deepEqual(written, [line]);
+  // A call the plane names no start for prints no such line.
+  const standing = fake({
+    invoke: () => Promise.resolve({ total: 100 }),
+    invokeStream: () => Promise.resolve({ result: { total: 100 } }),
+  });
+  const quiet: string[] = [];
+  await invokeAgent(standing, alone, {}, (text) => {
+    quiet.push(text);
+  });
+  await invokeAgentWatched(standing, alone, {
+    write: (text) => {
+      quiet.push(text);
+    },
+  });
+  assert.deepEqual(quiet, []);
+});
+
+test('a call names the contract its arguments were read against, by its sha256, and reads its parameters by the functions the plane lists; where the plane tells no contract it names none', async () => {
+  // The answer of `twice` is declared through an alias of a promise:
+  // the plane's own list says it is a function of the agent.
+  const contract =
+    'export type Answer<T> = Promise<T>;\nexport declare function twice(value: number): Answer<number>;\n';
+  const described = fake({
+    describe: (agentId: string) =>
+      Promise.resolve({
+        agent: { agentId, artifact: 'sha256:x', handlers: ['twice'], uses: [], type: 'module' },
+        contract,
+      }),
+  });
+  const read = await contractOfCall(described, 'math/doubler', 'twice');
+  assert.deepEqual(
+    read.parameters?.map((parameter) => parameter.name),
+    ['value'],
+  );
+  const contractSha = createHash('sha256').update(contract).digest('hex');
+  assert.equal(read.contractSha, contractSha);
+  assert.equal(argsOf(['5'], undefined, read.parameters, 'twice'), 5);
+  // A function the agent has not is read the plain way, and the call
+  // still names the contract that was read.
+  const absent = await contractOfCall(described, 'math/doubler', 'thrice');
+  assert.equal(absent.parameters, undefined);
+  assert.equal(absent.contractSha, contractSha);
+  // No contract told, or the plane not answering: nothing is named.
+  const bare = fake({
+    describe: (agentId: string) =>
+      Promise.resolve({ agent: { agentId, artifact: 'sha256:x', handlers: [], uses: [] } }),
+  });
+  assert.deepEqual(await contractOfCall(bare, 'ops/bare', 'run'), {});
+  const down = fake({ describe: () => Promise.reject(new Error('no plane')) });
+  assert.deepEqual(await contractOfCall(down, 'ops/bare', 'run'), {});
+  // Both forms of the call carry it to the plane beside the arguments.
+  const asked: unknown[] = [];
+  const named = (options: { in?: string; contractSha?: string }): void => {
+    asked.push({
+      ...(options.in === undefined ? {} : { in: options.in }),
+      ...(options.contractSha === undefined ? {} : { contractSha: options.contractSha }),
+    });
+  };
+  const client = fake({
+    invoke: (
+      agentId: string,
+      fn: string,
+      args: unknown,
+      options: { in?: string; contractSha?: string },
+    ) => {
+      named(options);
+      return Promise.resolve(10);
+    },
+    invokeStream: (
+      agentId: string,
+      fn: string,
+      args: unknown,
+      options: { in?: string; contractSha?: string },
+    ) => {
+      named(options);
+      return Promise.resolve({ result: 10 });
+    },
+  });
+  const call = {
+    agentId: 'math/doubler',
+    handler: 'twice',
+    args: 5,
+    in: 'math/desk',
+    contractSha,
+  };
+  await invokeAgent(client, call, {});
+  await invokeAgentWatched(client, call, { write: () => undefined });
+  const beside = { in: 'math/desk', contractSha };
+  assert.deepEqual(asked, [beside, beside]);
+  // The plane's refusal of a call prepared against a contract the agent
+  // no longer fits is printed as it is.
+  const moved = fake({
+    invoke: () =>
+      Promise.reject(
+        new CernantoError({
+          kind: 'terminal',
+          message:
+            'agent "math/doubler" was deployed again since this call was prepared, under another contract; read it again (cernanto contract math/doubler)',
+        }),
+      ),
+  });
+  await assert.rejects(
+    invokeAgent(moved, call, {}),
+    /^CernantoError: agent "math\/doubler" was deployed again since this call was prepared, under another contract; read it again \(cernanto contract math\/doubler\)$/,
+  );
 });
 
 test('an invoke of an id nothing is deployed as says so, in both forms of the call', async () => {

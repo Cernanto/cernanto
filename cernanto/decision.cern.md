@@ -1,6 +1,8 @@
 # cernanto/decision
 
-An interface: the decisions an agent's code asks of a model, each a
+Type: interface
+
+The decisions an agent's code asks of a model, each a
 typed value over the case in hand, named for the line the code writes
 next. `decideIf` answers a boolean for an if; `decideWhich` one of the
 given options for a switch; `decideLevel` one of the given levels,
@@ -126,8 +128,6 @@ over a context holding both; a gate before an action is `decideIf`,
 then code decides what happens and who confirms; reranking is
 `decideRank` over the hits; a taxonomy deeper than the options allow
 is `decideWhich` level by level.
-
-Type: interface
 
 ## Tests
 

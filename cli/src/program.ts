@@ -6,7 +6,7 @@ import { registerAuth } from './auth.js';
 import { registerAgent } from './agent.js';
 import { registerCancel } from './cancel.js';
 import { registerCluster } from './cluster.js';
-import { registerCode } from './code.js';
+import { registerCompiled } from './compiled.js';
 import { registerCompletion } from './completion.js';
 import { registerConfig } from './config.js';
 import { registerContext } from './context.js';
@@ -18,6 +18,7 @@ import { registerInvoke } from './invoke.js';
 import { registerLogin } from './login.js';
 import { registerRegistry, registryClient } from './registry.js';
 import { registerRegistryGet } from './registry-get.js';
+import { registerRestart } from './restart.js';
 import { registerSkill } from './skill.js';
 import { registerSource } from './source.js';
 import { registerCalls } from './calls.js';
@@ -25,6 +26,8 @@ import { registerTests } from './tests.js';
 import { registerToken } from './token.js';
 import { registerLs } from './ls.js';
 import { registerTrace } from './trace.js';
+import { registerTraces } from './traces.js';
+import { registerUi } from './ui.js';
 import { CLI_VERSION } from './version.js';
 
 // The command tree: every verb lives in its own module and registers
@@ -51,8 +54,9 @@ const SYNONYMS: [RegExp, string][] = [
   [/^skills$/, "cernanto skill installs the author's skill for your coding assistant"],
   [
     /^describe$/,
-    'cernanto contract <agent> prints its functions, cernanto code <agent> its code, cernanto tests <agent> its tests and cernanto source <agent> its page',
+    'cernanto contract <agent> prints its functions, cernanto compiled <agent> its code, cernanto tests <agent> its tests and cernanto source <agent> its page',
   ],
+  [/^code$/, 'cernanto compiled <agent> prints the code the compile wrote'],
   [/^(spec|page)$/, 'cernanto source <agent> prints the page an agent was compiled from'],
   [/^(deps|tree)$/, 'cernanto contract <agent> says what it uses and who uses it'],
   [
@@ -64,10 +68,18 @@ const SYNONYMS: [RegExp, string][] = [
     'cernanto registry get <name or folder/> brings a registry package into this folder as source',
   ],
   [
-    /^(start|stop|restart|pause|resume)$/,
-    'cernanto deploy <x> runs an agent, and a program again; cernanto delete <x> stops and removes it',
+    /^(start|run|up)$/,
+    "cernanto deploy <x> runs an agent, and cernanto call <module> <function> starts a module by itself; cernanto restart <x> runs a service's, a worker's or a job's program again",
+  ],
+  [
+    /^(stop|pause|resume|down|kill)$/,
+    'cernanto delete <x> stops and removes an agent, a module by itself as <module>-standalone; cernanto restart <x> runs a program again from the top',
   ],
   [/^(connect|account)$/, 'cernanto auth login <agent> [name] logs an account in'],
+  [
+    /^(open|web|browser|console|dashboard|gui)$/,
+    "cernanto ui opens the plane's UI in your browser",
+  ],
   [/^(watch|tail|follow)$/, 'cernanto trace <agent> -f follows an agent live'],
   [
     /^(events|history)$/,
@@ -98,6 +110,7 @@ export function compileProgram(): Command {
         '',
         'Start here:',
         '  cernanto dev                                 start the local plane; the first start installs its runtime',
+        "  cernanto ui                                  open the plane's UI in your browser",
         '  git clone https://github.com/cernanto/cernanto && cd cernanto/agents',
         '  cernanto deploy examples/basics/counter      land a precompiled example',
         '  cernanto call examples/basics/counter next   call it: 1, then 2',
@@ -112,23 +125,27 @@ export function compileProgram(): Command {
   program.option('--context <name>', 'the plane context for this run (the current one otherwise)');
 
   // The help lists the verbs in this order: the agents' every day
-  // first (deploy, call, trace, ls, contract, code, tests, source,
-  // calls, delete), then their accounts and settings, then the plane,
-  // then the rest.
+  // first (deploy, call, trace, ls, contract, compiled, tests, source,
+  // calls, delete, then the restart of a program), then their accounts
+  // and settings (what is set for an agent, and what its traces stand
+  // at), then the plane, then the rest.
   registerDeploy(program);
   registerInvoke(program);
   registerTrace(program);
   registerLs(program);
   registerContract(program);
-  registerCode(program);
+  registerCompiled(program);
   registerTests(program);
   registerSource(program);
   registerCalls(program);
   registerAgent(program);
+  registerRestart(program);
   registerSkill(program);
   registerAuth(program);
   registerConfig(program);
+  registerTraces(program);
   registerDev(program);
+  registerUi(program);
   registerLogin(program);
   registerContext(program);
   registerToken(program);

@@ -333,16 +333,21 @@ export declare function isName(x: unknown): x is string | Promise<string>;
   assert.deepEqual(listed({ handlers: ['wave', 'greet'] }), ['greet', 'wave']);
   const served = cardText({ agentId: 'ops/greeter', contract, handlers: ['wave', 'greet'] });
   assert.match(served, /\nGreet\n {2}Says hello\.\n\n {2}takes\n {4}name {3}text\n/);
+  // What such a function takes is not read: its line carries the
+  // arguments as they are.
   assert.match(
     served,
-    /\nWave\n\n {2}answers {2}anything\n\n {2}call it: cernanto call ops\/greeter wave\n/,
+    /\nWave\n\n {2}answers {2}anything\n\n {2}call it: cernanto call ops\/greeter wave --args <the arguments as json>\n/,
   );
   assert.doesNotMatch(served, /Says goodbye/);
-  // A row that names none, a module and an interface are read from
-  // the contract alone: what answers a promise of its own.
+  // A module's functions are the ones its package lists, as an agent
+  // that links it answers them: the same list, read the same way.
+  assert.deepEqual(listed({ handlers: ['wave', 'greet'], type: 'module' }), ['greet', 'wave']);
+  // A row that names none and an interface are read from the contract
+  // alone: what answers a promise of its own.
   assert.deepEqual(listed({}), ['greet', 'part']);
   assert.deepEqual(listed({ handlers: [] }), ['greet', 'part']);
-  assert.deepEqual(listed({ handlers: ['wave'], type: 'module' }), ['greet', 'part']);
+  assert.deepEqual(listed({ handlers: [], type: 'module' }), ['greet', 'part']);
   assert.deepEqual(listed({ handlers: ['wave'], type: 'interface' }), ['greet', 'part']);
   const surface = cardText({
     agentId: 'ops/greeter',
@@ -356,6 +361,74 @@ export declare function isName(x: unknown): x is string | Promise<string>;
   // An interface's call goes to the implementor the plane binds: its
   // card carries the command to paste like any agent's.
   assert.match(surface, /\n {2}call it: cernanto call ops\/greeter greet name=\.\.\.\n/);
+});
+
+test("a function the plane lists is read with its parameters however its contract spells its answer: a module's card shows it and a call's arguments are read by it", () => {
+  // The answer is declared through an alias of a promise, which the
+  // reading by the contract alone takes for a plain answer, a helper.
+  const contract = `export type Answer<T> = Promise<T>;
+/** Doubles a number. */
+export declare function twice(value: number): Answer<number>;
+/** Halves a number. */
+export declare function half(value: number): Promise<number>;
+`;
+  const card = cardText({
+    agentId: 'math/doubler',
+    contract,
+    handlers: ['twice', 'half'],
+    type: 'module',
+  });
+  assert.match(card, /\nTwice\n {2}Doubles a number\.\n\n {2}takes\n {4}value {3}number\n/);
+  assert.match(card, /call it: cernanto call math\/doubler twice value=0\n/);
+  assert.match(card, /call it: cernanto call math\/doubler half value=0\n/);
+  // The arguments of a call are read by the same list: `twice 5` is the
+  // number five, where the contract alone names no such function.
+  assert.equal(functionParameters(contract, 'twice'), undefined);
+  const parameters = functionParameters(contract, 'twice', ['twice', 'half']);
+  assert.deepEqual(
+    parameters?.map((parameter) => parameter.name),
+    ['value'],
+  );
+  assert.equal(argsOf(['5'], undefined, parameters, 'twice'), 5);
+  assert.equal(argsOf(['value=5'], undefined, parameters, 'twice'), 5);
+  // A function the list does not name is none of the agent's, whatever
+  // the contract declares; an empty list is no list.
+  assert.equal(functionParameters(contract, 'half', ['twice']), undefined);
+  assert.deepEqual(
+    functionParameters(contract, 'half', [])?.map((parameter) => parameter.name),
+    ['value'],
+  );
+});
+
+test('a function the plane lists whose declaration is not read takes its arguments as they are: no parameters read is not a function that takes nothing', () => {
+  // The function is a constant of a function type: the plane serves it,
+  // and the contract declares no function of its name.
+  const contract = `export type Unary = (value: number) => Promise<number>;
+/** Doubles a number. */
+export declare const twice: Unary;
+/** The count kept. */
+export declare function count(): Promise<number>;
+`;
+  // Its parameters are not known, which the plain way of reading the
+  // arguments takes: `--args 5` is the number five, and pairs make one
+  // record.
+  const unread = functionParameters(contract, 'twice', ['twice', 'count']);
+  assert.equal(unread, undefined);
+  assert.equal(argsOf([], '5', unread, 'twice'), 5);
+  assert.deepEqual(argsOf(['value=5'], undefined, unread, 'twice'), { value: '5' });
+  // A function read to take nothing still refuses what it is handed.
+  const none = functionParameters(contract, 'count', ['twice', 'count']);
+  assert.deepEqual(none, []);
+  assert.throws(() => argsOf([], '5', none, 'count'), /count takes no arguments/);
+  // The card lists it and says how it is called.
+  const card = cardText({
+    agentId: 'math/doubler',
+    contract,
+    handlers: ['twice', 'count'],
+    type: 'task',
+  });
+  assert.match(card, /call it: cernanto call math\/doubler twice --args <the arguments as json>\n/);
+  assert.match(card, /call it: cernanto call math\/doubler count\n/);
 });
 
 test('the card collapses inline objects and unions into plain words', () => {

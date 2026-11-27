@@ -1,6 +1,8 @@
 # cernanto/documents
 
-An interface: the plane's documents, keyed strings with a
+Type: interface
+
+The plane's documents, keyed strings with a
 compare-and-set write and a listing by prefix, as the
 platform's agents reach them wherever the plane runs. An implementor
 answers for the store the plane runs on, and every implementor is a
@@ -28,8 +30,6 @@ The operations:
 - LIST a prefix: every key under it with its string and revision,
   strongly consistent, every write acknowledged before the call began
   among them.
-
-Type: interface
 
 ## License
 

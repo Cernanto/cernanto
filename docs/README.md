@@ -6,6 +6,7 @@
 
 - [Quickstart](../README.md#quickstart): install Cernanto and ask the included helpdesk a question.
 - [Writing agents](WRITING-AGENTS.md): the language, dependencies, tests and development loop.
+- [The web UI](UI.md): the plane's own screen, where you install an example, call it and watch its calls.
 - [One file of your own](RUNTIME-AND-GUARANTEES.md#one-file-of-your-own): create a workspace, compile your first agent, and install the coding-assistant skill.
 - [Examples](../agents/README.md): choose a workflow or follow the basics tour.
 - [FAQ](FAQ.md): fit, costs, model access, local models and data.

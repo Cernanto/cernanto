@@ -5,6 +5,8 @@ Type: service
 Uses: file:crm/data/
 
 Leads, tickets, contacts and contracts, seeded from the granted files.
+A seeded contract's days are counted from the day the CRM starts: its
+file says how many days ago it started and in how many days it ends.
 Take a new lead (a company, a contact's name and email, a website and
 a country) and answer it with its id; answer a lead by its id; assign
 a lead to an owner; record what was learned about a lead, its employee

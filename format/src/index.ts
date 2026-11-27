@@ -22,4 +22,27 @@ export {
 export type { CernPackage, PackageContent } from './package-file.js';
 export { composePackageManifest, describeSpec } from './compose.js';
 export { parseSpecLabels } from './spec-labels.js';
+export {
+  docSections,
+  functionParameters,
+  parameterFields,
+  parametersOf,
+  parseContract,
+  plainParameter,
+  plainTypeOf,
+  recordParameter,
+  wordOf,
+} from './card-reader.js';
+export type {
+  ContractField,
+  Declared,
+  DeclaredAlias,
+  DeclaredInterface,
+  HandlerView,
+  ParameterReading,
+  ParameterView,
+  ParsedContract,
+  PlainField,
+  PlainType,
+} from './card-reader.js';
 export type { ComposeInput } from './compose.js';

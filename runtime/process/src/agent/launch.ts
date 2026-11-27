@@ -290,23 +290,28 @@ export function commandLineOf(
  * user and a temp folder even where the launcher's environment names
  * none, a proxy from either spelling), the clock and the locale the
  * same on every machine, the proofs' one switch when it is set, and the agent's
- * debug section for a copy of a compile's verification pair alone (its
- * generation's launch carries a form), so the coder's debug lines reach
- * the trace of a test run and nothing of a normal run. Nothing of the
- * launcher's own environment beyond that. A copy handed to another
- * user is given `home`, that user's folder, for its home: the
- * launcher's own home is root's and no agent's to write. */
+ * debug section for a copy of a compile's verification pair (its
+ * generation's launch carries the form `test` or `tester`) and for a
+ * copy of an agent whose traces are set to debug (its launch says so),
+ * so the coder's debug lines reach the trace of a test run and of an
+ * agent a person set to debug, and nothing of a normal run, a module
+ * started by itself among them: Node reads the section when the
+ * process starts. Nothing of the launcher's own environment beyond
+ * that. A copy handed to another user is given `home`, that user's
+ * folder, for its home: the launcher's own home is root's and no
+ * agent's to write. */
 export function copyEnvironment(
-  facts?: { form?: string | undefined },
+  facts?: { form?: string | undefined; traces?: string | undefined },
   home?: string,
 ): Record<string, string> {
+  const debug = facts?.form === 'test' || facts?.form === 'tester' || facts?.traces === 'debug';
   return {
     ...childEnvironment(),
     ...proofsEnvironment(),
     TZ: 'UTC',
     LANG: 'C.UTF-8',
     LC_ALL: 'C.UTF-8',
-    ...(facts?.form === undefined ? {} : { NODE_DEBUG: 'agent' }),
+    ...(debug ? { NODE_DEBUG: 'agent' } : {}),
     ...(home === undefined ? {} : { HOME: home }),
   };
 }

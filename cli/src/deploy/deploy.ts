@@ -30,6 +30,8 @@ import { diagnosticsSummary } from '../diagnostics.js';
 import type { Diagnostic } from '../diagnostics.js';
 import { ServerClient } from '../server-client.js';
 import { terminalIo } from '../terminal.js';
+import { offLine } from '../traces.js';
+import type { TracesClient } from '../traces.js';
 import { followWorkerRun } from './follow.js';
 import type { WorkerFollow } from './follow.js';
 import {
@@ -312,6 +314,9 @@ export type DeployPlane = CompileClient &
     invoke?(agentId: string, fn: string, args: unknown): Promise<unknown>;
     /** Runs a worker's program again. */
     agentStart?(agentId: string): Promise<unknown>;
+    /** The plane's listing, for what a followed worker's traces stand
+     * at; a plane without it reads every worker as followed. */
+    ls?: TracesClient['ls'];
   };
 
 /** Each agent's newest generation number, off the fleet; none when
@@ -443,12 +448,26 @@ export async function deployAction(
    * until each run ends; a follow of an agent that did not ship stops. */
   const followShipped = async (shipped: string[]): Promise<void> => {
     if (options.follow !== true) return;
-    for (const [agentId, open] of follows) {
-      if (!shipped.includes(agentId)) open.stop();
+    // A worker whose traces are off makes no record to follow: its run
+    // cannot be seen from here, so the deploy says so and does not wait
+    // for an end it would never hear.
+    const unseen: string[] = [];
+    const { ls } = client;
+    if (ls !== undefined) {
+      for (const agentId of shipped) {
+        const line = await offLine({ ls: (agent) => ls.call(client, agent) }, agentId);
+        if (line === undefined) continue;
+        unseen.push(agentId);
+        write(`not followed: ${line}`);
+      }
     }
-    const followed = shipped.map((agentId) => follow(agentId));
+    const seen = shipped.filter((agentId) => !unseen.includes(agentId));
+    for (const [agentId, open] of follows) {
+      if (!seen.includes(agentId)) open.stop();
+    }
+    const followed = seen.map((agentId) => follow(agentId));
     if (followed.length === 0) {
-      write('nothing to follow: no worker was deployed\n');
+      if (unseen.length === 0) write('nothing to follow: no worker was deployed\n');
       return;
     }
     await Promise.all(followed.map((open) => open.opened));

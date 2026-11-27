@@ -492,8 +492,8 @@ function openApiSuccessContent(document: Json, operationId: string): Json | unde
  * @param operationId - The operation the request was of.
  * @param outcome - `{result, status?}` or `{error: {kind, message, status?, body?}}`.
  * @returns `{status, contentType, body}`, the body empty for a `204` or a
- *   response without content, bytes for a declared octet-stream, text
- *   under the declared `text/*` type, json otherwise.
+ *   response without content, bytes under the kind the document marks
+ *   as bytes, text under the declared `text/*` type, json otherwise.
  * @example
  * const answer = answerOfOpenApi(document, 'getOrder', { result: { id: 7 } });
  * // => { status: 200, contentType: 'application/json', body: '{"id":7}' }
@@ -525,8 +525,9 @@ export function answerOfOpenApi(
   if (status === 204 || content === undefined || Object.keys(content).length === 0) {
     return { status, contentType: 'application/json', body: '' };
   }
-  if ('application/octet-stream' in content && outcome.result instanceof Uint8Array) {
-    return { status, contentType: 'application/octet-stream', body: outcome.result };
+  const bytes = bytesType(document, content);
+  if (bytes !== undefined && outcome.result instanceof Uint8Array) {
+    return { status, contentType: bytes, body: outcome.result };
   }
   if ('application/json' in content) {
     return { status, contentType: 'application/json', body: json(outcome.result) };
@@ -560,10 +561,37 @@ function openApiAnswersStream(document: Json, operationId: string): boolean {
   return content !== undefined && 'text/event-stream' in content;
 }
 
-/** Whether an operation's success is bytes. */
+/** The kind a content's bytes are answered under: `application/octet-stream`
+ * where the content declares it, and otherwise the first kind the
+ * document marks as bytes, a schema that is a string of the format
+ * `binary`. The kind alone does not say it: a `text/*` content with a
+ * plain string schema is a text out of a call. */
+function bytesType(document: Json, content: Json | undefined): string | undefined {
+  if (content === undefined) return undefined;
+  if ('application/octet-stream' in content) return 'application/octet-stream';
+  return Object.keys(content).find((type) => marksBytes(document, content[type]));
+}
+
+/** Whether a kind's content is marked as bytes: a schema that is a
+ * string of the format `binary`. */
+function marksBytes(document: Json, media: unknown): boolean {
+  const resolved = resolveRef(document, media);
+  const schema = isRecord(resolved) ? resolveRef(document, resolved['schema']) : undefined;
+  return isRecord(schema) && schema['type'] === 'string' && schema['format'] === 'binary';
+}
+
+/** Whether an operation's success is bytes: answered in process, with
+ * no record of its body, under the kind `bytesType` names. An operation
+ * that declares `application/octet-stream` is; any other is only when
+ * every kind its success answers under is marked as bytes, so one that
+ * offers another kind beside (json beside a csv marked as bytes) is a
+ * call like any other. */
 function openApiAnswersBytes(document: Json, operationId: string): boolean {
   const content = openApiSuccessContent(document, operationId);
-  return content !== undefined && 'application/octet-stream' in content;
+  if (content === undefined) return false;
+  if ('application/octet-stream' in content) return true;
+  const kinds = Object.keys(content);
+  return kinds.length > 0 && kinds.every((type) => marksBytes(document, content[type]));
 }
 
 /**

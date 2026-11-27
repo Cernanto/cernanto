@@ -124,9 +124,11 @@ heartbeat of the record's host is live and lists the copy with
 
 THE FACTS of a generation's launch are exactly `{agentId, port, gen,
 artifact?, composition?, life?, lives?, type, slots?, run?, form?,
-testOf?, target?}`, and a launch is these facts alone: `life` the life the
+testOf?, target?, traces?, moduleTraces?}`, and a launch is these facts alone: `life` the life the
 generation runs under and `lives` the life of each module of its
-composition, by the module's id; a process reads its facts from its own
+composition, by the module's id; `traces` what was set for the
+agent's traces, `on`, `debug` or `off`, and `moduleTraces` what was
+set for its modules', each module's id mapped to `on` or `off`; a process reads its facts from its own
 folder, and a worker's launch carries in `run` the number of the run
 its process starts when it boots. The facts are the whole of what a
 launch, a listing entry and a naming input carry; the naming input is
@@ -135,11 +137,20 @@ the substrate's generation sequence, identifies the generation
 plane-wide; `gen` is the agent's own generation ordinal. The
 composition maps module agent ids to artifact digests. A launch may
 name THE FORM the package takes: `form` is `test`, the package itself
-with the mocks its tests wrote linked in place of the mocked edges, or
-`tester`, the package's tests as a task with one function `run`; a launch with a form names `testOf`, the pair's other id: a tester's the
+with the mocks its tests wrote linked in place of the mocked edges,
+`tester`, the package's tests as a task with one function `run`, or
+`standalone`, a module's package as a service that links the module
+and has no function of its own. A launch whose form is `test` or
+`tester` names `testOf`, the pair's other id: a tester's the
 id its tests call, a test form's the agent it stands for and calls its
-dependencies as; and `target`, the canonical id of the agent the pair
-verifies, which both forms state on every call they make. The form,
+dependencies as; a launch of either form that names no `testOf` is
+the one thing refused of a pair's launch (`a launch whose form is
+test or tester names testOf`). Such a launch carries `target` too, the
+canonical id of the agent the pair verifies, which both forms state on
+every call they make, where its row has one, and is taken as it is
+where its row has none. A launch
+whose form is `standalone` names `target`, the module it links, and no
+`testOf`. The form,
 `testOf` and `target` go into the order's launch with the rest of the
 facts.
 
@@ -536,7 +547,8 @@ the `.cern` ending dropped, so `cernanto/compile/.cern/gates.cern` is
 `cernanto/compile/gates`. The scan is made once, at the first call
 that needs it, and kept for the life of the process. A mark that cannot
 be read, or that names no release's folder, or a folder that cannot be
-read, means none.
+read, means none. `releaseAgents {}` answers THE RELEASE'S AGENTS as
+the scan finds them, sorted, and reads nothing else.
 
 `settings` describes the execution shape, the hosts of the plane, one
 machine or several, each running the host job, and reports the kind
@@ -574,7 +586,8 @@ is not a whole number, a name that does not fit its launch, a
 malformed launch, a version that is not a release name); the settings
 read (the kind `hosts`, the release, the release's agents as the scan
 finds them, `cernanto/controller` among them, its numbers at their
-defaults when the configuration names none); and the reads: `list` names the plane's
+defaults when the configuration names none); the release's agents
+asked by themselves, the same list; and the reads: `list` names the plane's
 own generations, the controller among them; `hosts` answers at least
 one host, this machine's, live, with a positive cpu and
 memory; `metrics` answers a measurement for at least one live copy;

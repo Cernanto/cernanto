@@ -19,8 +19,10 @@ addresses, sorted, each once.
 `targetsOf` takes `{heartbeats, host}` and answers `{targets}`, the
 targets the host named forwards. A listener counts when it is `fixed`,
 in the state `accepting` and `bound` on every interface (`any`); a copy
-that carries `form` (a tester, or a test form of an agent) is left out
-with its listeners; a heartbeat whose address is empty or a loopback
+whose `form` is `test` or `tester` (a verification pair's agent, the
+compile's own) is left out with its listeners, and a copy with any
+other form, a module started by itself among them, counts like a copy
+with none; a heartbeat whose address is empty or a loopback
 address (`127.` or `::1`) is left out with its copies. A port and
 protocol a copy of the host itself accepts is served there and left out,
 whoever else holds it. The rest, one target per port and protocol,

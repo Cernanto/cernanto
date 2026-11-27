@@ -11,3 +11,7 @@ cernanto/
 # The cli's gateway client is generated from the gateway's OpenAPI document
 # (cli/scripts/regen-gateway.mjs); a restyle would fail the regeneration check.
 cli/src/gateway/
+
+# The web UI's gateway client is made the same way at every build of the UI
+# (ui/scripts/gateway-client.mjs) and is never committed.
+ui/src/gateway/

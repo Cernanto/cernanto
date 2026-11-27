@@ -7,6 +7,8 @@ import type { CallSummary, TraceRecord } from './gateway/types.gen.js';
 import { dateTime, elapsed, fail, outputOf, render, spokenHandler } from './output.js';
 import type { OutputOptions } from './output.js';
 import { ServerClient } from './server-client.js';
+import { offSinceWords, offWords, tracesOff } from './traces.js';
+import type { TracesClient } from './traces.js';
 
 // `cernanto calls [agent-id]`: the recent calls, newest first, the
 // plane's or one agent's, each as an author reads it: the function as
@@ -79,12 +81,27 @@ function answerOf(row: CallSummary, story: { output?: unknown; answered: boolean
 }
 
 export async function getCalls(
-  client: Pick<ServerClient, 'calls' | 'call'>,
+  client: Pick<ServerClient, 'calls' | 'call'> & Partial<Pick<TracesClient, 'ls'>>,
   filter: { agent?: string; limit?: number },
   options: OutputOptions,
   now: () => number = Date.now,
+  /** Where a line about the read goes, beside the table. */
+  note: (line: string) => void = () => undefined,
 ): Promise<string> {
-  const runs = await client.calls(filter);
+  // An agent whose traces are off stores no call: a reader who asked for
+  // its calls is told so, with the way to turn them on, whether the read
+  // brought none or the ones stored before.
+  const { ls } = client;
+  const agent = filter.agent;
+  const [runs, off] = await Promise.all([
+    client.calls(filter),
+    agent === undefined || ls === undefined
+      ? Promise.resolve(false)
+      : tracesOff({ ls: (one) => ls.call(client, one) }, agent),
+  ]);
+  if (off && agent !== undefined) {
+    note(`${runs.length === 0 ? offWords(agent) : offSinceWords(agent)}\n`);
+  }
   // Each call's input and answer come off its own records, read side by
   // side; a call that cannot be read shows neither.
   const stories = await Promise.all(
@@ -157,6 +174,10 @@ export function registerCalls(program: Command): void {
                 ...(agentId === undefined ? {} : { agent: resolveAgentSelector(agentId) }),
               },
               outputOf(options),
+              Date.now,
+              // Beside the table, on the other stream: a script that
+              // reads the table reads the table alone.
+              (line) => process.stderr.write(line),
             ),
           );
         } catch (error) {

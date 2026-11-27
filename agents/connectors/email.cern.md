@@ -1,7 +1,8 @@
 # Email
 
-This page only defines the contract every email provider implements:
-an email account. Every operation takes an optional account name:
+Type: interface
+
+An email account. Every operation takes an optional account name:
 without one, act as the domain's default account; with one, act as the
 account connected under that name. A name nobody has connected parks
 the call until that account is connected.
@@ -54,8 +55,6 @@ can tell, the agent the mail is for: the agent that sent the mail this
 one replies to, or else the agent that last wrote to this sender from
 this account, both known from who asked the account to send; absent
 when neither is known.
-
-Type: interface
 
 ## Tests
 

@@ -1,7 +1,8 @@
 # Chat
 
-This page only defines the contract every chat provider implements:
-a chat account. Every operation takes an optional account name:
+Type: interface
+
+A chat account. Every operation takes an optional account name:
 without one, act as the domain's default account; with one, act as the
 account connected under that name. A name nobody has connected parks
 the call until that account is connected.
@@ -52,8 +53,6 @@ first message of the thread it is under, or else, in a direct message,
 the agent that last wrote in that conversation from this account, both
 known from who asked the account to send; absent otherwise, and always
 absent for a channel message under no thread.
-
-Type: interface
 
 ## Tests
 

@@ -30,6 +30,8 @@ tags:
     description: The API's own description.
   - name: health
     description: The probes and counters for the cluster and the scrapers.
+  - name: ui
+    description: "The web UI's own files: its document, its scripts and its stylesheets, open paths."
 paths:
   /healthz:
     get:
@@ -199,7 +201,7 @@ paths:
       operationId: agentDelete
       tags:
         - agents
-      summary: Undeploys one agent and its tester; refused while deployed agents depend on it unless forced.
+      summary: Undeploys one agent and its tester, and with a module the module started by itself; refused while deployed agents depend on it unless forced.
       parameters:
         - $ref: "#/components/parameters/agentId"
         - $ref: "#/components/parameters/force"
@@ -234,7 +236,7 @@ paths:
       tags:
         - agents
       summary: "Calls one exported function of a deployed agent and waits for its answer, for as long as it works."
-      description: "The row gate (an id nothing is deployed as: 404; a module is never served, and an interface is served by its default implementor, the gate judging that id, or refused when it has none: 400), then one call under the body's idempotency key, waited for until it answers. A target-unavailable failure (a deploy still converging) repeats the call every 300 milliseconds for up to sixty seconds before answering 503."
+      description: "The row gate (an id nothing is deployed as: 404; a module's function is called inside an agent that links the module, the one the body's `in` names, else by itself, in the module's standalone agent, which this call starts when the module is not started by itself; an interface is served by its default implementor, the gate judging that id, or refused when it has none: 400), then one call under the body's idempotency key, waited for until it answers. A target-unavailable failure (a deploy still converging) repeats the call every 300 milliseconds for up to sixty seconds before answering 503. A module's function is taken by a copy that links the module's package as deployed and by no other: while the agent called is rolling onto that package, a copy that still links the one before refuses the call before anything of it runs, and the call is repeated the same way until a copy that links it takes it."
       parameters:
         - $ref: "#/components/parameters/agentId"
         - $ref: "#/components/parameters/functionName"
@@ -252,7 +254,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InvokeResponse"
         "400":
-          description: "Exactly `agent \"<agentId>\" is a module; it runs inside <the composing agents, sorted, comma-separated, or \"no agent yet\">: invoke one of them`, or `agent \"<agentId>\" is an interface with no default implementor; it is implemented by <the implementors, sorted, comma-separated, or \"no agent yet\">`; else the callee's own terminal or contract-violation error."
+          description: "For a module, each exactly, where <the agents> are the module's composing agents, sorted, comma-separated: called with no `in` while it is not started by itself and cannot be, the controller's refusal of its start, in its words: `\"<agentId>\" carries no contract; a module is linked by its contract, so it is not started by itself`, `\"<agentId>\" is a compile's test form; it is not started by itself`, or `\"<agentId>-standalone\" is on the fleet and is not \"<agentId>\" started by itself; remove it first (cernanto delete <agentId>-standalone)`; with an `in` that is not one of them, `agent \"<agentId>\" does not run inside \"<in>\"; it runs inside <the agents, or \"no agent yet\">`; with an `in` that is a worker, `\"<in>\" is a worker and takes no call`; with an `in` held to another package of the module than the one deployed, `\"<in>\" links an earlier \"<agentId>\" than the one deployed; deploy \"<in>\" again to call it there (cernanto deploy <in>)`; where no copy of the agent called has the module's function as deployed while that agent is not rolling onto it, for an `in`, `\"<in>\" does not answer \"<agentId>.<function>\" in the generation it runs, as one started under an earlier release of the plane does not. A new generation of \"<in>\" answers it; or call \"<agentId>\" by itself (cernanto call <agentId> <function>)`, and for the module started by itself, `\"<agentId>\" is started by itself in a generation that does not answer \"<agentId>.<function>\"; delete it and call again (cernanto delete <agentId>-standalone)`. For an `in` on an agent that is no module, exactly `agent \"<agentId>\" is not a module; it is called as itself`. Or `agent \"<agentId>\" is an interface with no default implementor; it is implemented by <the implementors, sorted, comma-separated, or \"no agent yet\">`; or, for a body that names `contractSha` and an interface whose default implementor's row implements it under another contract, or names it under `implements` not at all, exactly `\"<the implementor>\" implements \"<agentId>\" under another contract than the one deployed; deploy \"<the implementor>\" again (cernanto deploy <the implementor>)`; else the callee's own terminal or contract-violation error."
           content:
             application/json:
               schema:
@@ -261,6 +263,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           description: "Exactly `no agent \"<agentId>\"`, carrying no kind, for an id nothing is deployed as; or exactly `agent \"<agentId>\" has no function \"<function>\"; cernanto contract <agentId> lists its functions`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "For a body that names `contractSha` while the agent's row carries a contract of another text (its sha256 is another value; a contract the row lists as one it is compatible with is another contract to a call, whose arguments ride under their parameters' names), exactly `agent \"<agentId>\" was deployed again since this call was prepared, under another contract; read it again (cernanto contract <agentId>)`, of the kind `terminal`. Nothing was called."
           content:
             application/json:
               schema:
@@ -274,7 +282,7 @@ paths:
         "500":
           $ref: "#/components/responses/Unexpected"
         "503":
-          description: "After sixty seconds of target-unavailable: `{error: {kind: \"retryable\", message: \"invoke <service>/<function> failed: <its message>\"}}`; else the callee's retryable error."
+          description: "After sixty seconds of target-unavailable, or of a module's function refused by copies that link another package of the module than the one deployed while the agent called rolls onto it: `{error: {kind: \"retryable\", message: \"invoke <service>/<function> failed: <its message>\"}}`; a call that names `in`, or `contractSha`, while the fleet cannot be read: `{error: {kind: \"retryable\", message: \"the fleet cannot be read: <its message>\"}}`; else the callee's retryable error."
           content:
             application/json:
               schema:
@@ -308,7 +316,7 @@ paths:
                 type: string
                 description: "Each data event is one InvokeStreamEvent as JSON."
         "400":
-          description: "As `invoke` answers it: a module, or an interface with no default implementor, named in the same words."
+          description: "As `invoke` answers it: a module that is called nowhere it runs, an `in` that does not fit, an agent no copy of which has the module's function, or an interface with no default implementor, named in the same words."
           content:
             application/json:
               schema:
@@ -317,6 +325,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           description: "As `invoke` answers it: exactly `no agent \"<agentId>\"`, or exactly `agent \"<agentId>\" has no function \"<function>\"; cernanto contract <agentId> lists its functions`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "As `invoke` answers it: the agent was deployed again, under another contract, since the call was prepared."
           content:
             application/json:
               schema:
@@ -330,7 +344,8 @@ paths:
       operationId: agentStart
       tags:
         - agents
-      summary: "Starts an agent's program again: a new version of the same code runs it from the top."
+      summary: "Starts an agent's program again: a new version of the same code runs it from the top, with an empty memory."
+      description: "A worker's, a service's or a job's program runs again, and what its process held goes with it. A task keeps nothing between calls and has no program to start again. A module has none of its own either: a call of a module that names no `in` starts it by itself, and the delete of its standalone agent, `<the module's id>-standalone`, ends that."
       parameters:
         - $ref: "#/components/parameters/agentId"
       responses:
@@ -340,6 +355,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgentStartResult"
+        "400":
+          description: "The controller's refusal, in its words: `no agent \"<agentId>\" on the fleet`; `\"<agentId>\" is a <type>; only a worker's, a service's or a job's program starts`; for a module, `\"<agentId>\" is a module; a call of it starts it by itself (cernanto call <agentId> <function>)`; and for a module started by itself named by its standalone agent's id, `\"<agentId>\" is \"<the module>\" started by itself; delete it and the next call of \"<the module>\" starts it anew (cernanto delete <agentId>)`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/agents/{agentId}/traces:
+    post:
+      operationId: agentTraces
+      tags:
+        - agents
+      summary: "Sets what an agent's traces stand at: on, debug or off. The agent starts again as a new version, and a module's change starts the agents that link it."
+      description: "`on` stores each call with its details and the console's lines, `debug` the same with the agent's debug lines, `off` nothing; the call totals and the active calls are counted under every value. A module is `on` or `off`. The answer names the agents that start again for the change."
+      parameters:
+        - $ref: "#/components/parameters/agentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentTracesRequest"
+      responses:
+        "200":
+          description: The setting stands; the plane starts the named agents again.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTracesResult"
+        "400":
+          description: "The controller's refusal, in its words: `no agent \"<agentId>\"`; `\"<agentId>\" is an interface; it runs no code, so it keeps no traces`; `\"<agentId>\" belongs to a compile's test run, which is always traced in debug`; `\"<agentId>\" keeps no traces; its log is its record`; `\"<agentId>\" is a module; a module's traces are on or off, and its debug lines are kept where an agent that links it is set to debug`; or, for a change an agent would have to start again for and cannot, `\"<agentId>\" cannot start again as it is deployed: a module it uses changed its contract since it was compiled; compile it against the module as it is deployed now, then set its traces` and, for a module, `\"<agentId>\" is linked by <agents>, which cannot start again as deployed: a module used there changed its contract since the compile; compile against the modules as they are deployed now, then set its traces`. A refusal writes nothing."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
@@ -493,7 +548,7 @@ paths:
       operationId: cancel
       tags:
         - calls
-      summary: "Ends a call: the process holding it is asked to end it."
+      summary: "Ends a call: the process holding it is asked to end it. The id of a module's call inside an agent ends the agent's call it runs inside."
       parameters:
         - $ref: "#/components/parameters/callId"
       responses:
@@ -713,6 +768,46 @@ paths:
                 $ref: "#/components/schemas/PackageExists"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /v1/packages/{digest}/file:
+    get:
+      operationId: packageFile
+      tags:
+        - deploy
+      summary: "One file of a package the plane holds, as text: its source, its code, its tests, its contract, or its manifest, which names the rest."
+      parameters:
+        - $ref: "#/components/parameters/digest"
+        - name: name
+          in: query
+          required: true
+          description: "The file's path inside the package: `agent.cern.md`, `cernanto.json`, `contract.d.ts`, `code/index.ts`, a test under `tests/`."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The file's text.
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: "The warehouse's own words for a name that is not a plain relative path; kind terminal."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: "Exactly `no file \"<name>\" in <digest>`, carrying no kind, for a package the plane does not hold and for one that carries no such file."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "500":
           $ref: "#/components/responses/Unexpected"
         "503":
@@ -1070,13 +1165,106 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/Unexpected"
+  /:
+    get:
+      operationId: uiDocument
+      tags:
+        - ui
+      summary: "The web UI's document, as the release this plane runs from carries it. The UI's files hold nothing of the plane, so they are open paths; what a reader does in the UI is admitted operation by operation."
+      security: []
+      parameters:
+        - name: sec-fetch-dest
+          in: header
+          required: false
+          description: "What the browser says the request is for. A request for a frame is refused, so no other site's page shows the UI inside itself."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The document.
+          content:
+            text/html:
+              schema:
+                type: string
+                format: binary
+        "403":
+          description: "Exactly `the UI is not answered into a frame`, for a request whose `sec-fetch-dest` is `iframe`, `frame`, `embed` or `object`; kind terminal."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Exactly `this release carries no UI`, when the release has no document for it; kind terminal."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+  /ui/js/{file}:
+    get:
+      operationId: uiScript
+      tags:
+        - ui
+      summary: "One of the web UI's scripts, by the name the UI's document gives it."
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/uiFile"
+      responses:
+        "200":
+          description: The script.
+          content:
+            text/javascript:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: "Exactly `no script \"<file>\"`, for a name that is not one of the UI's own scripts; kind terminal."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
+  /ui/css/{file}:
+    get:
+      operationId: uiStylesheet
+      tags:
+        - ui
+      summary: "One of the web UI's stylesheets, by the name the UI's document gives it."
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/uiFile"
+      responses:
+        "200":
+          description: The stylesheet.
+          content:
+            text/css:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: "Exactly `no stylesheet \"<file>\"`, for a name that is not one of the UI's own stylesheets; kind terminal."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Unexpected"
 components:
   securitySchemes:
     operatorToken:
       type: http
       scheme: bearer
-      description: "An operator token, minted by tokenCreate and kept by auth as its sha256: the digest of the bearer names a live token. A request made at the plane's own machine (a loopback peer that names a loopback host, passed on by no front and sent by no other site's page) needs no bearer and is the operator `local`; a bearer equal to the file secrets/operator-token under the working folder is the operator `bootstrap`. Every operation demands it except /healthz and /oauth/callback."
+      description: "An operator token, minted by tokenCreate and kept by auth as its sha256: the digest of the bearer names a live token. A request made at the plane's own machine (a loopback peer that names a loopback host, passed on by no front and sent by no other site's page) needs no bearer and is the operator `local`; a bearer equal to the file secrets/operator-token under the working folder is the operator `bootstrap`. Every operation demands it except /healthz, /oauth/callback and the web UI's own files."
   parameters:
+    uiFile:
+      name: file
+      in: path
+      required: true
+      description: "The file's own name, as the UI's document names it."
+      schema:
+        type: string
     agentId:
       name: agentId
       in: path
@@ -1414,7 +1602,7 @@ components:
       properties:
         agentId:
           type: string
-          description: The agent whose program starts.
+          description: "The agent whose program starts."
         run:
           type: number
           description: "Which run of the program this start asks for: one more than the run before it."
@@ -1423,6 +1611,55 @@ components:
           description: "Absent: the call is a new version's own, and its id exists once that version's process has booted."
       required:
         - agentId
+        - fleet
+    AgentTracesRequest:
+      description: "What an agent's traces are set to."
+      type: object
+      properties:
+        traces:
+          $ref: "#/components/schemas/Traces"
+      required:
+        - traces
+    AgentTracesResult:
+      description: "A write of an agent's traces."
+      type: object
+      properties:
+        agentId:
+          type: string
+        traces:
+          $ref: "#/components/schemas/Traces"
+        changed:
+          type: boolean
+          description: "Whether what the agent's traces stand at moved."
+        starts:
+          type: array
+          description: "The agents that start again for it, sorted by id: none when nothing changed; the agent itself when it runs; for a module, the agents that link it."
+          items:
+            $ref: "#/components/schemas/AgentStarting"
+      required:
+        - agentId
+        - traces
+        - changed
+        - starts
+    AgentStarting:
+      description: An agent that starts again.
+      type: object
+      properties:
+        agentId:
+          type: string
+        type:
+          type: string
+          description: "The agent's type: `service`, `task`, `job` or `worker`."
+      required:
+        - agentId
+        - type
+    Traces:
+      description: "What an agent's traces stand at: `on` stores each call with its details and the console's lines, `debug` the same with the agent's debug lines, `off` nothing."
+      type: string
+      enum:
+        - "on"
+        - debug
+        - "off"
     UpgradeRequest:
       description: "The release the plane's hosts upgrade to."
       type: object
@@ -2219,6 +2456,12 @@ components:
         idempotencyKey:
           type: string
           description: "Names the call when given: requests under one key are one call while it runs and until its answer is delivered."
+        in:
+          type: string
+          description: "For a module's function: the agent to run it inside, one of the agents that link the module. The call is that agent's own, with the module's memory in the copy that takes it. Absent, the call runs the module by itself, in its standalone agent, which the call starts when the module is not started by itself."
+        contractSha:
+          type: string
+          description: "The contract the arguments were read against: the sha256 hex of its text, as `describe` answered it. Given, the call is refused when the agent's contract is of any other text now, and, for an interface, when the implementor it is called through implements it under another contract, so arguments shaped for one contract never reach another. Absent, the call is made as it is."
     InvokeResponse:
       type: object
       properties:
@@ -2227,6 +2470,9 @@ components:
         callId:
           type: string
           description: "The id of the call's request, under which its records are kept: the call's handle with the request's own part after one more colon."
+        started:
+          type: string
+          description: "The module's standalone agent, when this call started the module by itself; absent from every other answer."
       required:
         - result
         - callId
@@ -2240,6 +2486,9 @@ components:
             callId:
               type: string
               description: "The id of the call's request, under which its records are kept: the call's handle with the request's own part after one more colon."
+            started:
+              type: string
+              description: "The module's standalone agent, when this call started the module by itself; absent otherwise."
           required:
             - callId
         record:
@@ -2614,10 +2863,14 @@ components:
           enum:
             - test
             - tester
-          description: "A verification pair row's form: the package itself with the mocks its tests wrote linked in place of the mocked edges (test), or its tests as a task with one function run (tester)."
+            - standalone
+          description: "The form the row's package takes. A verification pair row's: the package itself with the mocks its tests wrote linked in place of the mocked edges (test), or its tests as a task with one function run (tester). Or a module started by itself (standalone): a service that links the module and has no function of its own."
         testOf:
           type: string
           description: "A tester row's target: the id its tests call."
+        target:
+          type: string
+          description: "For a verification pair row, the agent the pair verifies; for a standalone row, the module it links."
         owner:
           type: string
           description: "The handle of the compile call that shipped a verification pair row; the plane removes the pair when that compile is gone."
@@ -2957,6 +3210,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LsFunction"
+        traces:
+          $ref: "#/components/schemas/Traces"
       required:
         - agentId
         - type

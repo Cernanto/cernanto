@@ -21,7 +21,7 @@ brief, for a coding agent working here.
   it"). The compile prints the line back (`reads a service, from the
 Type: label`, `reads a task`); a spec without the line is a task.
 - **A spec grants what its agent works with on its `Uses:` line**,
-  exactly, and names each thing in the prose where the work needs it:
+  exactly, and the prose says only the work, never the agent that does it:
   another agent by its id, an npm package as `npm:<name>@<major>`, an
   MCP server or an OpenAPI document as `mcp:<url>` or
   `openapi:<url>`, a file or a folder as `file:<path from the spec's
@@ -50,6 +50,6 @@ folder>`, and the built-in agents under `cernanto/` (`decision`,
   type, what it does and what it shows. The spec itself carries no
   commentary, since it is what a reader copies.
 - **Run every command from this folder**: `cernanto deploy`,
-  `call`, `trace`, `contract`, `source`, `code`, `tests`, `ls`.
+  `call`, `trace`, `contract`, `source`, `compiled`, `tests`, `ls`.
 - **An id is a path, so a spec moved or renamed is another agent**: it
   compiles anew under its new id, and its old package is removed.

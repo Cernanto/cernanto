@@ -14,22 +14,22 @@ $ cernanto deploy examples/   # lands their packages in dependency order; nothin
 
 ## Start from a problem you recognize
 
-| I want to...                                                  | start with                                                       | what it teaches                                                                    | to run it   |
-| ------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------- |
-| check that the install works                                  | `examples/basics/counter`                                        | a service with memory, calls served side by side, a crash survived                 | nothing     |
-| answer questions from my own documents                        | `examples/basics/team-notes`, then `examples/workflows/helpdesk` | granted files and a judgment grounded in them; a chat bot on top                   | an AI login |
-| follow up on support tickets                                  | `examples/workflows/support-follow-up`                           | classify, tell the team, wait for a person, remind once                            | an AI login |
-| approve invoices against orders and receipts                  | `examples/workflows/invoice-approval`                            | a document read by judgment, exact arithmetic in code, an approval chain           | an AI login |
-| decide refunds under a written policy                         | `examples/workflows/refund-desk`                                 | a policy file, an OpenAPI server other systems call                                | an AI login |
-| approve expenses from a photo of the receipt                  | `examples/workflows/expense-desk`                                | a picture read by judgment, the receipt's fields one at a time                     | an AI login |
-| act on an alert from my homelab                               | `examples/basics/hook`, then `examples/basics/notice`            | a webhook through the cloud relay; a notice, its public board mocked               | nothing     |
-| route the shared inbox to the desks that handle it            | `examples/workflows/mail-router/desk`                            | two rules before one judgment; a handler reached by a forward, one called in place | an AI login |
-| put a front desk on the team chat that knows who handles what | `examples/workflows/chat-router/desk`                            | sessions, reroute and takeover; the same handlers behind mail and chat             | an AI login |
-| renew a contract by mail once a year                          | `examples/workflows/renewal-desk`                                | a conversation the agent starts: send, wait, counter once, record                  | an AI login |
-| shortlist the articles that answer a question                 | `examples/basics/shortlist`                                      | the items that pass and the best of them, two decisions over a list                | an AI login |
-| rate an incident and page at a threshold                      | `examples/basics/severity`                                       | a degree on a scale the code compares, two degrees weighed in arithmetic           | an AI login |
+| I want to...                                                  | start with                                                       | what it teaches                                                                    | to run it          |
+| ------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------ |
+| check that the install works                                  | `examples/basics/counter`                                        | a service with memory, calls served side by side, a crash survived                 | nothing            |
+| answer questions from my own documents                        | `examples/basics/team-notes`, then `examples/workflows/helpdesk` | granted files and a judgment grounded in them; a chat bot on top                   | a coding assistant |
+| follow up on support tickets                                  | `examples/workflows/support-follow-up`                           | classify, tell the team, wait for a person, remind once                            | a coding assistant |
+| approve invoices against orders and receipts                  | `examples/workflows/invoice-approval`                            | a document read by judgment, exact arithmetic in code, an approval chain           | a coding assistant |
+| decide refunds under a written policy                         | `examples/workflows/refund-desk`                                 | a policy file, an OpenAPI server other systems call                                | a coding assistant |
+| approve expenses from a photo of the receipt                  | `examples/workflows/expense-desk`                                | a picture read by judgment, the receipt's fields one at a time                     | a coding assistant |
+| act on an alert from my homelab                               | `examples/basics/hook`, then `examples/basics/notice`            | a webhook through the cloud relay; a notice, its public board mocked               | nothing            |
+| route the shared inbox to the desks that handle it            | `examples/workflows/mail-router/desk`                            | two rules before one judgment; a handler reached by a forward, one called in place | a coding assistant |
+| put a front desk on the team chat that knows who handles what | `examples/workflows/chat-router/desk`                            | sessions, reroute and takeover; the same handlers behind mail and chat             | a coding assistant |
+| renew a contract by mail once a year                          | `examples/workflows/renewal-desk`                                | a conversation the agent starts: send, wait, counter once, record                  | a coding assistant |
+| shortlist the articles that answer a question                 | `examples/basics/shortlist`                                      | the items that pass and the best of them, two decisions over a list                | a coding assistant |
+| rate an incident and page at a threshold                      | `examples/basics/severity`                                       | a degree on a scale the code compares, two degrees weighed in arithmetic           | a coding assistant |
 
-"An AI login" is Claude Code or Codex installed on this machine and
+"A coding assistant" is Claude Code or Codex installed on this machine and
 signed in with your own Claude or ChatGPT subscription, or an API key
 set in its place, which the plane's judgments run on; every example here runs on the sandbox company in
 `examples/sandbox/`, so none needs an account with an outside service. The
@@ -94,28 +94,30 @@ there are three more ways to take a published one, none of which
 needs this repository:
 
 - **As source, in a folder of your own:**
-  `cernanto registry get examples/` brings every example, each page
+  `cernanto registry get examples/` brings every example, each source
   beside its package with the files it names, and
   `cernanto deploy examples/` lands them with nothing to compile. They
   are yours from that moment: change a sentence and deploy.
   `cernanto registry get connectors/frankfurter` takes one agent the
   same way.
 - **As it is, by its name:** `cernanto deploy connectors/frankfurter`
-  installs the package and what it needs, with no page in your folder.
-- **From a spec of your own:** a page whose `Uses:` line names
+  installs the package and what it needs, with no source in your folder.
+- **From a spec of your own:** an agent whose `Uses:` line names
   `connectors/email` has the package installed by its compile and kept
   in your tree.
 
 An agent taken as source and the same agent installed by its name are
 two standings of one id, and a plane holds one of them:
-`cernanto delete <id>` before taking the other road.
+`cernanto delete <id>` before taking the other road. The delete removes
+the agent with what it remembers and its traces, so the other road
+starts it fresh.
 
 ## Reading and running an agent
 
 Every agent is read the same way: `cernanto contract <id>` prints
 what it does and what each function takes and answers, `cernanto
-source <id>` the page it was compiled from (`--to <folder>` writes the
-page there with the files it names), `cernanto code <id>` the
+source <id>` the source it was compiled from (`--to <folder>` writes
+it there with the files it names), `cernanto compiled <id>` the
 code the compile wrote and `cernanto tests <id>` its tests, `cernanto
 call <id> <function> key=value` calls it, `cernanto trace <id>` reads
 its latest call as a conversation, `cernanto ls` shows the fleet.

@@ -37,7 +37,7 @@ the first refusal in this order.
    `task`, `job`, `worker`, `interface`, `module`), `testerArtifact`
    (non-empty text), `contract` (text), `usesContracts` (ids to text),
    `contractCompatibleWith` (a list of text), `implements` (entries
-   `{id, contractSha}`, `id` non-empty), `form` (`test` or `tester`), `testOf`, `target` and `owner` (text);
+   `{id, contractSha}`, `id` non-empty), `form` (`test`, `tester` or `standalone`), `testOf`, `target` and `owner` (text);
 every other field rides untouched.
    Refuse a row that does not fit: `the row of <agentId> does not fit:
    <field>: <why>`, the failing fields joined by `; `, or `row <index>
@@ -45,7 +45,40 @@ every other field rides untouched.
    agent. Refuse a row without `form` that carries `testOf`, `target` or `owner`:
 `<agentId> carries testOf, target or owner but no form; only a
 verification pair row (form test or tester) carries them`. A row
-   that carries `form` is a VERIFICATION PAIR ROW. Its `owner` is a
+   whose `form` is `standalone` is A STANDALONE ROW, a module started
+   by itself as a service that links it. Its `target` names the
+   module; otherwise refuse `<agentId> is a standalone row with no
+   target; it names the module it links`. Its id is
+   `<target>-standalone`; otherwise refuse `<agentId> is a standalone
+   row whose id is not <target>-standalone`. It is a service's row,
+   its `type` absent or `service`; otherwise refuse `<agentId> is a
+   standalone row of type <type>; a module started by itself is a
+   service`. It carries no `testOf`, no `owner` and no `package`;
+   otherwise refuse `<agentId> is a standalone row; it carries no
+   <the first of testOf, owner and package it carries>`. Its `uses`
+   is a list of its target alone, since the module is all it links;
+   otherwise refuse `<agentId> is a standalone row whose uses is not
+   its target <target> alone`. Its target is
+   a row of `type: 'module'` that carries no `form` (a pair's test
+   form is the compile's own, started by nobody), among the ship's
+   rows first and the fleet's second; otherwise refuse `<agentId> is a
+   standalone row whose target <target> is no module on the fleet or
+   in this ship`. That module row carries a `contract`, by which a
+   module is linked; otherwise refuse `<agentId> is a standalone row
+   whose target <target> carries no contract; a module is linked by
+   its contract`. A MODULE STARTED BY ITSELF KEEPS ITS ID AND TAKES NO
+   OTHER AGENT'S: of two rows under one id, one a standalone row and
+   the other not, the shipped one is refused. A row that is no
+   standalone row, whose id a standalone row of the fleet holds:
+   `<agentId> is <that row's target> started by itself; delete it first
+   (cernanto delete <agentId>)`. A standalone row whose id a
+   row of the fleet holds that is no standalone row: `<agentId> is on
+   the fleet and is not <target> started by itself; remove it first
+   (cernanto delete <agentId>)`. Two rows of one ship under one id,
+   one of them a standalone row: `<agentId> is shipped twice, as
+   <target> started by itself and as an agent of its own`.
+   The pair rules below are not a standalone row's. A row
+   whose `form` is `test` or `tester` is a VERIFICATION PAIR ROW. Its `owner` is a
    handle: letters, digits and underscores, a colon, digits or
    nothing, a colon, then at least one character; otherwise refuse
    `<agentId> is a verification <form> row whose owner is <absent, or

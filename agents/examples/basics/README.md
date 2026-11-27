@@ -43,7 +43,7 @@ spec ends with its terms, the two labels under `## License`.
 `cernanto contract examples/basics/<agent>` prints an agent's functions,
 what each takes and answers, and the `cernanto call` line that calls
 it: that is how you find the names used below, and the ones your edit
-adds. `cernanto code examples/basics/<agent>` prints the code the compile wrote,
+adds. `cernanto compiled examples/basics/<agent>` prints the code the compile wrote,
 and `cernanto tests examples/basics/<agent>` its tests. `cernanto trace
 examples/basics/<agent>` prints its latest call as a conversation. The outputs shown are what a pipe or `-q` gets; at a
 terminal, `cernanto call` first prints the call's conversation,
@@ -52,12 +52,12 @@ then its answer and a `cernanto trace` command for it.
 ## counter, a service: is the install working?
 
 ```
+Type: service
+
 Hand out queue numbers from one count this agent keeps for everyone
 who calls it. Each call gets the next number: 1, then 2,
 then 3, and so on. Never hand out the same number twice, even when
 calls arrive together.
-
-Type: service
 ```
 
 A service keeps memory for the life of its deployed version and serves
@@ -286,6 +286,54 @@ Triage · Triage  ok  1m19s  examples_basics_triage:20074:c-4ba1715a-60d1-446e-b
 
 </details>
 
+**Change it while a call waits.** A deploy does not wait for the calls
+in progress and does not end them. Ask the version that runs now with
+ten minutes:
+
+<!-- lab exercise -->
+
+```
+$ cernanto call examples/basics/triage triage message="I was charged twice for order A-1042" minutes:=10 &
+```
+
+While that call waits, have the agent also answer the minutes it
+waited, and deploy:
+
+<!-- lab edit examples/basics/triage.cern.md
+answer the category and the order id.
+=>
+answer the category, the order id and the minutes it waited.
+-->
+
+```
+$ cernanto deploy examples/basics/triage
+$ cernanto call examples/basics/triage triage message="I was charged twice for order A-1042" minutes:=0
+{"category":"billing","orderId":"A-1042","minutes":0}
+```
+
+The amend took a minute, and the new version answered in the new form
+six seconds after it was asked. The first call still waits. List the
+agent's calls, then let the first terminal answer:
+
+<!-- lab exercise -->
+
+```
+$ cernanto calls examples/basics/triage
+FUNCTION  INPUT                                                       ANSWER                                          AT                   TOOK          CALLS OUT  CALL
+Triage    message: I was charged twice for order A-1042, minutes: 0   category: billing, orderId: A-1042, minutes: 0  2026-11-20 13:49:36  6s            3          examples_basics_triage:20014:c-0a05c3ac-2a9c-4e28-a7e2-4761dbd5139a-2:74802b490b2c4767
+Triage    message: I was charged twice for order A-1042, minutes: 10  running                                         2026-11-20 13:48:22  1m20s so far  3          examples_basics_triage:20011:c-0ad1adf3-30d9-4561-94ae-3c5fdde7f611-2:74b0246c17fa454c
+$   # the first terminal answers, ten minutes after it was asked:
+{"category":"billing","orderId":"A-1042"}
+```
+
+The number in a call's id is its generation's: `20011` took the first
+call and `20014` is the new one, and for those minutes both ran. The
+old generation took no new call, stayed up for the one it held and
+answered it in the form it was compiled with; then the plane retired
+it. A task's new version starts beside the old one. A service's
+replaces it and starts with fresh memory, as the counter's count
+starts over.
+
 ## fact-check, search and a judgment: check a claim against the web
 
 ```
@@ -327,7 +375,7 @@ $ cernanto call examples/basics/fact-check factCheck claim="The Great Wall of Ch
 ```
 
 `cernanto contract examples/basics/fact-check` now names the third field the
-compile added; the name is the coder's choice, the sentence is yours.
+compile added; the name is the coding assistant's choice, the sentence is yours.
 
 ## facts, using an agent without naming it: every claim in a text
 
@@ -377,12 +425,12 @@ $ cernanto call examples/basics/facts facts text="Mount Everest is the tallest m
 ## approval, a call that parks: ask a person and wait
 
 ```
-A service. Accept an approval request with a name and a time limit in
+Type: service
+
+Accept an approval request with a name and a time limit in
 minutes. Wait for a person to approve or reject it by name, then
 answer their decision. If the time limit passes first, answer that no
 one decided in time.
-
-Type: service
 ```
 
 A purchase request, an access request, a deploy: the request parks
@@ -429,12 +477,12 @@ $ cernanto call examples/basics/approval requestApproval name="a bicycle" timeLi
 ## ping, a job: run a command-line tool
 
 ```
-Each call is one live run of the system's ping command, started over
-if it fails part way.
+Type: job
+
 Given a host name, ping it five times. Answer the average round trip
 time in milliseconds and how many of the five replies were lost.
 
-Type: job
+Ping with the system's ping command.
 ```
 
 A job runs a live tool whose answers change from run to run, so nothing
@@ -753,11 +801,10 @@ adds one for the medium severity the agent now promises.
 ## clock, a worker: a program on its own schedule
 
 ```
-Runs by itself from the moment it is deployed; nothing calls it.
+Type: worker
+
 Five seconds after it starts, and every five seconds after that,
 announce the time. After thirty seconds, finish.
-
-Type: worker
 ```
 
 A worker is a program the plane starts and stops with its generation;
@@ -827,9 +874,7 @@ Clock · Run  ok  30.0s  examples_basics_clock:20401:k-worker=003aexamples=002fb
 
 ```
 greeting.cern.md    Type: interface
-                    This page only defines the contract every greeter
-                    implements: given a name, answer a greeting for
-                    that person.
+                    Given a name, answer a greeting for that person.
 
 formal.cern.md      Type: module
                     Implements: examples/basics/greeting
@@ -1014,7 +1059,7 @@ $ cernanto call examples/basics/severity assessIncident report="The settings pag
   of whatever the spec grants.
 - The tests are written by the compile from the spec and run live against
   a temporary copy of the agent before it lands. `cernanto tests
-examples/basics/<agent>` shows them, and `cernanto code examples/basics/<agent>` the code.
+examples/basics/<agent>` shows them, and `cernanto compiled examples/basics/<agent>` the code.
 - Everything an agent does is in its trace, read as a conversation:
   what came in, what it called, what came back, what it answered.
 - One sentence changed is one deploy: an amend of the previous compile,
@@ -1041,7 +1086,7 @@ When the API is already fixed, the document is the contract:
 `examples/basics/orders/openapi.yaml` declares two operations, and the spec
 names the document on its `Implements:` line and says where the agent
 listens. The compile
-generates the server, the typed empty functions the coder fills and
+generates the server, the typed empty functions the coding assistant fills and
 the handler that turns each request into a call, and the agent
 listens for itself on the port the sentence names, with the
 document's paths exactly as written. It keeps the orders between
